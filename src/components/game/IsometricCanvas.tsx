@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { FarmTile, GameState, ToolMode, CropType, AnimalType, Season, TimeOfDay } from '../../types/game';
+import { FarmTile, GameState, ToolMode, CropType, AnimalType, Season, TimeOfDay, WeatherType } from '../../types/game';
 import { CROPS, GRID_SIZE } from '../../constants/gameData';
 import { sound } from '../../services/audio';
 
-const TILE_WIDTH = 76;
-const TILE_HEIGHT = 38;
+const TILE_WIDTH = 78;
+const TILE_HEIGHT = 40;
+const TILE_DEPTH = 10; // 3D diorama bevel height for smooth graphics
 
 interface FloatingParticle {
   id: string;
@@ -15,10 +16,12 @@ interface FloatingParticle {
   alpha: number;
   life: number;
   maxLife: number;
-  type: 'text' | 'heart' | 'sparkle' | 'water' | 'smoke' | 'weather';
+  type: 'text' | 'heart' | 'sparkle' | 'water' | 'smoke' | 'weather' | 'lightning';
   text?: string;
   color?: string;
   size?: number;
+  angle?: number;
+  spin?: number;
 }
 
 interface IsometricCanvasProps {
@@ -76,6 +79,8 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const windmillAngleRef = useRef(0);
   const animalSquashRef = useRef<Record<string, number>>({});
+  const lightningFlashRef = useRef(0); // 0 to 1 intensity
+  const nextThunderTimeRef = useRef(Date.now() + 6000);
 
   // Helper to add floating visual particle
   const spawnParticle = useCallback((
@@ -98,24 +103,27 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     });
   }, []);
 
-  // Weather particles initializer
+  // Weather particles pooling
   useEffect(() => {
-    // Generate initial floating seasonal ambient particles
-    for (let i = 0; i < 40; i++) {
+    particlesRef.current = [];
+    const count = 50;
+    for (let i = 0; i < count; i++) {
       particlesRef.current.push({
         id: 'weather_' + i,
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        vx: 0.5 + Math.random() * 0.8,
-        vy: 0.3 + Math.random() * 0.6,
-        alpha: 0.4 + Math.random() * 0.5,
+        vx: 1 + Math.random() * 2,
+        vy: 2 + Math.random() * 3,
+        alpha: 0.5 + Math.random() * 0.5,
         life: Math.random() * 200,
         maxLife: 300,
         type: 'weather',
         size: 3 + Math.random() * 4,
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.08,
       });
     }
-  }, []);
+  }, [gameState.weather]);
 
   // Center camera on the farm on initial mount
   useEffect(() => {
@@ -130,13 +138,11 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       canvasRef.current.style.width = `${width}px`;
       canvasRef.current.style.height = `${height}px`;
 
-      // Ideal zoom based on viewport
       const isMobile = width < 600;
       const idealZoom = isMobile ? 0.95 : 1.15;
       cameraRef.current.zoom = idealZoom;
       cameraRef.current.targetZoom = idealZoom;
 
-      // Center of farm
       cameraRef.current.x = 0;
       cameraRef.current.targetX = 0;
       cameraRef.current.y = isMobile ? -20 : 0;
@@ -178,7 +184,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     const state = gameStateRef.current;
     if (gx < 0 || gx >= GRID_SIZE || gy < 0 || gy >= GRID_SIZE) return;
 
-    // Moving mode active?
     if (movingTileRef.current) {
       onPlaceMovedTile(gx, gy);
       return;
@@ -195,7 +200,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       sound.playAnimalPet(tile.animal.type);
       onAnimalPet(tile.animal.id, tile);
 
-      // Particle hearts
       if (canvasRef.current) {
         const { sx, sy } = gridToScreen(gx, gy, canvasRef.current.clientWidth, canvasRef.current.clientHeight);
         spawnParticle(sx, sy - 24, 'heart', { color: '#ec4899', size: 16 });
@@ -204,18 +208,55 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       return;
     }
 
-    // Direct structure tap?
-    if (tile.structure && currentTool === 'inspect') {
-      sound.playTap();
-      onStructureClick(tile.structure.type, tile);
-      return;
+    // Direct structure or fish pond tap?
+    if (tile.type === 'fish_pond' || (tile.structure && (tile.structure.type === 'fish_pond' || currentTool === 'inspect'))) {
+      if (tile.structure?.type === 'fish_pond' || tile.type === 'fish_pond') {
+        sound.playFishCatch();
+        onStructureClick('fish_pond', tile);
+        if (canvasRef.current) {
+          const { sx, sy } = gridToScreen(gx, gy, canvasRef.current.clientWidth, canvasRef.current.clientHeight);
+          const fishType = Math.random() > 0.5 ? 'Bangus 🐟' : 'Tilapia 🐠';
+          spawnParticle(sx, sy - 25, 'text', {
+            text: `+1 ${fishType}`,
+            color: '#38bdf8',
+            size: 14,
+          });
+          spawnParticle(sx + 10, sy - 40, 'text', {
+            text: '+35 🪙',
+            color: '#fbbf24',
+            size: 12,
+          });
+          for (let i = 0; i < 6; i++) {
+            spawnParticle(sx + (Math.random() - 0.5) * 16, sy - 15 + (Math.random() - 0.5) * 10, 'water', {
+              color: '#38bdf8',
+              size: 3.5,
+            });
+          }
+        }
+        return;
+      }
+
+      if (tile.structure && currentTool === 'inspect') {
+        sound.playTap();
+        onStructureClick(tile.structure.type, tile);
+        return;
+      }
     }
 
     // Handle tool action on tile
     if (canvasRef.current) {
       const { sx, sy } = gridToScreen(gx, gy, canvasRef.current.clientWidth, canvasRef.current.clientHeight);
 
-      if (currentTool === 'plow' && tile.type === 'grass') {
+      if (currentTool === 'carabao_plow') {
+        sound.playPlow();
+        sound.playAnimalPet('carabao');
+        for (let i = 0; i < 5; i++) {
+          spawnParticle(sx + (Math.random() - 0.5) * 20, sy + (Math.random() - 0.5) * 12, 'sparkle', {
+            color: '#78350f',
+            size: 5,
+          });
+        }
+      } else if (currentTool === 'plow' && tile.type === 'grass') {
         sound.playPlow();
         spawnParticle(sx, sy, 'sparkle', { color: '#a16207', size: 4 });
       } else if (currentTool === 'plant' && tile.type === 'soil' && !tile.crop) {
@@ -264,7 +305,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     interactionRef.current.hasMovedSignificantly = false;
     sound.ensureUnlocked();
 
-    // Check tile immediately for tap
     if (canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const { gx, gy } = screenToGrid(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
@@ -295,7 +335,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       const currentTool = gameStateRef.current.selectedTool;
       const isSwipeTool = currentTool === 'harvest' || currentTool === 'water' || currentTool === 'plant';
 
-      // If swipe tool is active and over a new tile, trigger action!
       if (isSwipeTool && !movingTileRef.current) {
         const tileKey = `${gx},${gy}`;
         if (tileKey !== interactionRef.current.lastSwipedTileKey) {
@@ -303,7 +342,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           executeActionOnTile(gx, gy);
         }
       } else {
-        // Pan the camera
         cameraRef.current.x += e.movementX;
         cameraRef.current.y += e.movementY;
         cameraRef.current.targetX = cameraRef.current.x;
@@ -315,7 +353,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
   const handlePointerUp = (e: React.PointerEvent) => {
     if (interactionRef.current.isPointerDown) {
       if (!interactionRef.current.hasMovedSignificantly) {
-        // Clean tap/click
         const gx = interactionRef.current.hoveredGridX;
         const gy = interactionRef.current.hoveredGridY;
         executeActionOnTile(gx, gy);
@@ -328,7 +365,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
   // Touch gesture support (pinch zoom & swipe)
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      // Pinch to zoom
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
@@ -347,7 +383,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     interactionRef.current.lastPinchDistance = 0;
   };
 
-  // Mouse wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
@@ -355,32 +390,64 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     cameraRef.current.targetZoom = newZoom;
   };
 
-  // --- DRAWING PROCEDURAL HELPERS ---
-  const drawIsometricDiamond = (
+  // --- DRAWING PROCEDURAL HELPERS (Smooth Diorama 3D Bevel Tiles) ---
+  const drawIsometricDioramaTile = (
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
     w: number,
     h: number,
-    fill: string,
-    stroke?: string,
-    strokeWidth: number = 1
+    depth: number,
+    topFill: string,
+    leftFill: string,
+    rightFill: string,
+    stroke?: string
   ) => {
+    // 3D Left side face
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, y);
+    ctx.lineTo(x, y + h / 2);
+    ctx.lineTo(x, y + h / 2 + depth);
+    ctx.lineTo(x - w / 2, y + depth);
+    ctx.closePath();
+    ctx.fillStyle = leftFill;
+    ctx.fill();
+
+    // 3D Right side face
+    ctx.beginPath();
+    ctx.moveTo(x, y + h / 2);
+    ctx.lineTo(x + w / 2, y);
+    ctx.lineTo(x + w / 2, y + depth);
+    ctx.lineTo(x, y + h / 2 + depth);
+    ctx.closePath();
+    ctx.fillStyle = rightFill;
+    ctx.fill();
+
+    // Top surface diamond
     ctx.beginPath();
     ctx.moveTo(x, y - h / 2);
     ctx.lineTo(x + w / 2, y);
     ctx.lineTo(x, y + h / 2);
     ctx.lineTo(x - w / 2, y);
     ctx.closePath();
-
-    ctx.fillStyle = fill;
+    ctx.fillStyle = topFill;
     ctx.fill();
 
     if (stroke) {
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
+      ctx.lineWidth = 1;
       ctx.stroke();
     }
+  };
+
+  // Draw soft oval shadow for objects
+  const drawSoftShadow = (ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number) => {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   };
 
   // 60FPS Simulation and Render loop
@@ -393,7 +460,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     let lastTime = performance.now();
 
     const render = (now: number) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.05); // clamped dt
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
 
       const dpr = window.devicePixelRatio || 1;
@@ -411,7 +478,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       // Rotate windmill sails smoothly
       windmillAngleRef.current += dt * 1.5;
 
-      // Soft decay for animal squash bounces
+      // Decay animal squashes
       Object.keys(animalSquashRef.current).forEach((id) => {
         if (animalSquashRef.current[id] > 0) {
           animalSquashRef.current[id] -= dt * 3;
@@ -419,13 +486,35 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         }
       });
 
+      // Decay lightning flash
+      if (lightningFlashRef.current > 0) {
+        lightningFlashRef.current -= dt * 4;
+        if (lightningFlashRef.current < 0) lightningFlashRef.current = 0;
+      }
+
       const state = gameStateRef.current;
       const season = state.season;
       const timeOfDay = state.timeOfDay;
+      const weather = state.weather || 'sunny';
 
-      // Background grass horizon / pasture gradient
+      // Thunderstorm random lightning trigger
+      if (weather === 'thunderstorm' && now > nextThunderTimeRef.current) {
+        lightningFlashRef.current = 0.85;
+        sound.playThunder();
+        nextThunderTimeRef.current = now + 4000 + Math.random() * 8000;
+      }
+
+      // 1. Dynamic Horizon Background Palette
       const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-      if (season === 'winter') {
+      if (weather === 'thunderstorm') {
+        bgGrad.addColorStop(0, '#1e293b');
+        bgGrad.addColorStop(0.5, '#334155');
+        bgGrad.addColorStop(1, '#1e2836');
+      } else if (weather === 'rain') {
+        bgGrad.addColorStop(0, '#334155');
+        bgGrad.addColorStop(0.5, '#475569');
+        bgGrad.addColorStop(1, '#293548');
+      } else if (season === 'winter') {
         bgGrad.addColorStop(0, '#7395a8');
         bgGrad.addColorStop(0.5, '#99b3c4');
         bgGrad.addColorStop(1, '#c0d6df');
@@ -446,69 +535,145 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Sort tiles by gx + gy for correct isometric depth layering
+      // Sort tiles by gx + gy for correct depth
       const sortedTiles = [...state.tiles].sort((a, b) => a.x + a.y - (b.x + b.y));
 
-      // 1. Draw base tiles
+      // 2. Draw 3D Smooth Diorama Tiles
       sortedTiles.forEach((tile) => {
         const { sx, sy } = gridToScreen(tile.x, tile.y, width, height);
         const tw = TILE_WIDTH * zoom;
         const th = TILE_HEIGHT * zoom;
+        const td = TILE_DEPTH * zoom;
 
-        // Tile base colors
-        let baseColor = '#5ba857';
-        let strokeColor = 'rgba(0,0,0,0.06)';
+        let topColor = '#5ea853';
+        let leftColor = '#3e7536';
+        let rightColor = '#2f5b2a';
+        let strokeColor = 'rgba(255,255,255,0.06)';
 
         if (season === 'spring') {
-          baseColor = (tile.x + tile.y) % 2 === 0 ? '#5ea853' : '#67b35c';
+          topColor = (tile.x + tile.y) % 2 === 0 ? '#63ad57' : '#6cb85f';
+          leftColor = '#3d7436';
+          rightColor = '#32602c';
         } else if (season === 'summer') {
-          baseColor = (tile.x + tile.y) % 2 === 0 ? '#72b842' : '#7cc24a';
+          topColor = (tile.x + tile.y) % 2 === 0 ? '#72b842' : '#7cc24a';
+          leftColor = '#4e8229';
+          rightColor = '#3f6b21';
         } else if (season === 'autumn') {
-          baseColor = (tile.x + tile.y) % 2 === 0 ? '#a38446' : '#ad8f4e';
+          topColor = (tile.x + tile.y) % 2 === 0 ? '#a38446' : '#ad8f4e';
+          leftColor = '#6d5528';
+          rightColor = '#59441f';
         } else if (season === 'winter') {
-          baseColor = (tile.x + tile.y) % 2 === 0 ? '#d9e7ec' : '#e4eff4';
+          topColor = (tile.x + tile.y) % 2 === 0 ? '#d9e7ec' : '#e4eff4';
+          leftColor = '#8ba1ab';
+          rightColor = '#72858e';
           strokeColor = 'rgba(255,255,255,0.2)';
         }
 
         if (tile.type === 'soil') {
-          const isWatered = tile.crop?.watered;
-          baseColor = isWatered ? '#52341e' : '#855938';
-          strokeColor = isWatered ? '#3b2312' : '#6e4527';
+          const isWatered = tile.crop?.watered || weather === 'rain' || weather === 'thunderstorm';
+          topColor = isWatered ? '#452b19' : '#784e31';
+          leftColor = isWatered ? '#2e1c10' : '#4d301c';
+          rightColor = isWatered ? '#22150c' : '#3d2616';
         } else if (tile.type === 'stone_path') {
-          baseColor = '#94a3b8';
-          strokeColor = '#64748b';
+          topColor = '#94a3b8';
+          leftColor = '#64748b';
+          rightColor = '#475569';
         } else if (tile.type === 'wood_path') {
-          baseColor = '#b45309';
-          strokeColor = '#78350f';
+          topColor = '#b45309';
+          leftColor = '#78350f';
+          rightColor = '#451a03';
         } else if (tile.type === 'flower_bed') {
-          baseColor = '#4d7c0f';
+          topColor = '#4d7c0f';
+          leftColor = '#365314';
+          rightColor = '#1a2e05';
         } else if (tile.type === 'water_pond') {
-          baseColor = '#38bdf8';
-          strokeColor = '#0284c7';
+          topColor = '#38bdf8';
+          leftColor = '#0284c7';
+          rightColor = '#0369a1';
+        } else if (tile.type === 'fish_pond') {
+          // Tropical Philippine Aquaculture Fish Pond (Palaisdaan)
+          topColor = '#0e7490';
+          leftColor = '#155e75';
+          rightColor = '#164e63';
+          strokeColor = '#a16207';
         }
 
-        // Draw diamond
-        drawIsometricDiamond(ctx, sx, sy, tw, th, baseColor, strokeColor, 1);
+        // Draw 3D beveled block
+        drawIsometricDioramaTile(ctx, sx, sy, tw, th, td, topColor, leftColor, rightColor, strokeColor);
 
-        // Soil texture furrows
-        if (tile.type === 'soil') {
-          ctx.strokeStyle = tile.crop?.watered ? 'rgba(40, 20, 10, 0.4)' : 'rgba(90, 50, 20, 0.3)';
-          ctx.lineWidth = 1.5 * zoom;
+        // Water sheen on wet soil
+        if (tile.type === 'soil' && (tile.crop?.watered || weather === 'rain' || weather === 'thunderstorm')) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
           ctx.beginPath();
-          ctx.moveTo(sx - tw * 0.25, sy - th * 0.1);
-          ctx.lineTo(sx + tw * 0.1, sy + th * 0.25);
-          ctx.moveTo(sx - tw * 0.1, sy - th * 0.25);
-          ctx.lineTo(sx + tw * 0.25, sy + th * 0.1);
-          ctx.stroke();
+          ctx.ellipse(sx, sy, tw * 0.28, th * 0.28, 0, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        // Water pond ripples
+        // Fish Pond (Palaisdaan) with swimming Tilapia and Bangus (Milkfish)!
+        if (tile.type === 'fish_pond') {
+          // Bamboo pond rim
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 2 * zoom;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - th * 0.48);
+          ctx.lineTo(sx + tw * 0.48, sy);
+          ctx.lineTo(sx, sy + th * 0.48);
+          ctx.lineTo(sx - tw * 0.48, sy);
+          ctx.closePath();
+          ctx.stroke();
+
+          // Swimming Silver Milkfish (Bangus) - sleek silver with forked tail
+          const fishPhase = now / 800 + tile.x * 2;
+          const bangusX = sx + Math.cos(fishPhase) * tw * 0.24;
+          const bangusY = sy + Math.sin(fishPhase) * th * 0.22;
+          ctx.save();
+          ctx.translate(bangusX, bangusY);
+          ctx.rotate(fishPhase + Math.PI / 2);
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 8 * zoom, 2.8 * zoom, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Bangus forked tail
+          ctx.fillStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.moveTo(-7 * zoom, 0);
+          ctx.lineTo(-12 * zoom, -3.5 * zoom);
+          ctx.lineTo(-12 * zoom, 3.5 * zoom);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+
+          // Swimming River Tilapia - olive/grey with banded stripes
+          const tilapiaPhase = now / 950 + tile.y * 3 + 2;
+          const tilapiaX = sx + Math.cos(tilapiaPhase) * tw * 0.2;
+          const tilapiaY = sy + Math.sin(tilapiaPhase) * th * 0.18;
+          ctx.save();
+          ctx.translate(tilapiaX, tilapiaY);
+          ctx.rotate(tilapiaPhase + Math.PI / 2);
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 7 * zoom, 4.2 * zoom, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#10b981';
+          ctx.fillRect(-2 * zoom, -3 * zoom, 1.5 * zoom, 6 * zoom);
+          ctx.fillRect(2 * zoom, -3 * zoom, 1.5 * zoom, 6 * zoom);
+          ctx.restore();
+
+          // Floating green kangkong / lily leaves
+          ctx.fillStyle = '#15803d';
+          ctx.beginPath();
+          ctx.arc(sx - 10 * zoom, sy - 4 * zoom, 4 * zoom, 0, Math.PI * 2);
+          ctx.arc(sx + 12 * zoom, sy + 3 * zoom, 4.5 * zoom, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Animated pond ripples
         if (tile.type === 'water_pond') {
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
           ctx.lineWidth = 1.5;
           const ripplePhase = (now / 1000 + tile.x) % 2;
           ctx.beginPath();
-          ctx.ellipse(sx, sy, tw * 0.25 * ripplePhase, th * 0.25 * ripplePhase, 0, 0, Math.PI * 2);
+          ctx.ellipse(sx, sy, tw * 0.26 * ripplePhase, th * 0.26 * ripplePhase, 0, 0, Math.PI * 2);
           ctx.stroke();
         }
 
@@ -530,7 +695,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         }
       });
 
-      // 2. Draw objects, structures, crops, animals on tiles
+      // 3. Draw Objects, Structures, Crops, and Animals with Smooth Shadows
       sortedTiles.forEach((tile) => {
         const { sx, sy } = gridToScreen(tile.x, tile.y, width, height);
         const tw = TILE_WIDTH * zoom;
@@ -538,6 +703,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
 
         // FENCE
         if (tile.type === 'fence') {
+          drawSoftShadow(ctx, sx, sy, 14 * zoom, 6 * zoom);
           ctx.fillStyle = '#b45309';
           ctx.fillRect(sx - 4 * zoom, sy - 18 * zoom, 8 * zoom, 20 * zoom);
           ctx.fillStyle = '#78350f';
@@ -552,8 +718,11 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           const prog = tile.crop.growthProgress;
           const sway = Math.sin(now / 400 + tile.x * 2) * 2 * zoom;
 
+          // Shadow under plant
+          drawSoftShadow(ctx, sx, sy, 8 * zoom, 4 * zoom);
+
           if (prog < 0.35) {
-            // Stage 1: Delicate green seedling sprout
+            // Stage 1: Sprout
             ctx.fillStyle = '#4ade80';
             ctx.beginPath();
             ctx.ellipse(sx - 5 * zoom, sy - 6 * zoom, 3 * zoom, 5 * zoom, -0.4, 0, Math.PI * 2);
@@ -564,7 +733,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.fillStyle = '#22c55e';
             ctx.fillRect(sx - 1.5 * zoom, sy - 8 * zoom, 3 * zoom, 8 * zoom);
           } else if (prog < 0.9) {
-            // Stage 2: Mid-growth leafy plant
+            // Stage 2: Foliage
             ctx.fillStyle = '#16a34a';
             ctx.beginPath();
             ctx.ellipse(sx + sway, sy - 14 * zoom, 8 * zoom, 12 * zoom, 0, 0, Math.PI * 2);
@@ -577,17 +746,14 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.ellipse(sx + 6 * zoom + sway, sy - 12 * zoom, 6 * zoom, 8 * zoom, 0.3, 0, Math.PI * 2);
             ctx.fill();
           } else {
-            // Stage 3: Full Ripe Harvest Ready
-            // Ripe bounce
+            // Stage 3: Ripe
             const ripeBounce = Math.sin(now / 250 + tile.x) * 3 * zoom;
 
-            // Stalk / Foliage
             ctx.fillStyle = '#15803d';
             ctx.beginPath();
             ctx.ellipse(sx + sway, sy - 12 * zoom, 10 * zoom, 12 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Fruit / Grain Head
             ctx.fillStyle = cropDef.color;
             if (tile.crop.type === 'wheat') {
               for (let i = 0; i < 3; i++) {
@@ -603,7 +769,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.ellipse(sx - 5 * zoom, sy - 15 * zoom + ripeBounce, 5 * zoom, 7 * zoom, -0.2, 0, Math.PI * 2);
               ctx.ellipse(sx + 5 * zoom, sy - 14 * zoom + ripeBounce, 5.5 * zoom, 7.5 * zoom, 0.2, 0, Math.PI * 2);
               ctx.fill();
-              // Seeds dots
               ctx.fillStyle = '#fef08a';
               ctx.fillRect(sx + 4 * zoom, sy - 14 * zoom + ripeBounce, 1.5, 1.5);
               ctx.fillRect(sx - 4 * zoom, sy - 15 * zoom + ripeBounce, 1.5, 1.5);
@@ -614,28 +779,68 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.strokeStyle = cropDef.secondaryColor;
               ctx.lineWidth = 2 * zoom;
               ctx.stroke();
-              // Stem
               ctx.fillStyle = '#65a30d';
               ctx.fillRect(sx - 2 * zoom, sy - 26 * zoom + ripeBounce, 4 * zoom, 7 * zoom);
             } else if (tile.crop.type === 'sunflower') {
-              // Big yellow petals
               ctx.fillStyle = '#eab308';
               ctx.beginPath();
               ctx.arc(sx + sway, sy - 26 * zoom + ripeBounce, 11 * zoom, 0, Math.PI * 2);
               ctx.fill();
-              // Brown seed center
               ctx.fillStyle = '#78350f';
               ctx.beginPath();
               ctx.arc(sx + sway, sy - 26 * zoom + ripeBounce, 6 * zoom, 0, Math.PI * 2);
               ctx.fill();
+            } else if (tile.crop.type === 'palay') {
+              // Palay (Golden Rice stalks)
+              for (let stalk = -1; stalk <= 1; stalk++) {
+                const offX = stalk * 6 * zoom;
+                ctx.fillStyle = '#eab308';
+                ctx.beginPath();
+                ctx.ellipse(sx + offX + sway, sy - 22 * zoom + ripeBounce, 3 * zoom, 11 * zoom, stalk * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ca8a04';
+                ctx.lineWidth = 1 * zoom;
+                ctx.stroke();
+                // Drooping golden grain panicles
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(sx + offX + sway + stalk * 4 * zoom, sy - 30 * zoom + ripeBounce, 2.5 * zoom, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            } else if (tile.crop.type === 'ube') {
+              // Ube (Purple Yam with heart-shaped leaves & violet tubers)
+              ctx.fillStyle = '#7e22ce';
+              ctx.beginPath();
+              ctx.ellipse(sx - 4 * zoom, sy - 12 * zoom + ripeBounce, 7 * zoom, 5 * zoom, -0.2, 0, Math.PI * 2);
+              ctx.ellipse(sx + 5 * zoom, sy - 14 * zoom + ripeBounce, 8 * zoom, 6 * zoom, 0.3, 0, Math.PI * 2);
+              ctx.fill();
+              // Heart-shaped deep green leaves on top
+              ctx.fillStyle = '#16a34a';
+              ctx.beginPath();
+              ctx.arc(sx - 3 * zoom, sy - 22 * zoom + ripeBounce, 5 * zoom, 0, Math.PI * 2);
+              ctx.arc(sx + 4 * zoom, sy - 20 * zoom + ripeBounce, 4.5 * zoom, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (tile.crop.type === 'mango') {
+              // Carabao Mango (Golden hanging fruits)
+              ctx.fillStyle = '#15803d';
+              ctx.beginPath();
+              ctx.ellipse(sx + sway, sy - 20 * zoom, 12 * zoom, 14 * zoom, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Golden yellow mangoes
+              ctx.fillStyle = '#facc15';
+              ctx.beginPath();
+              ctx.ellipse(sx - 5 * zoom, sy - 16 * zoom + ripeBounce, 4 * zoom, 6 * zoom, 0.3, 0, Math.PI * 2);
+              ctx.ellipse(sx + 6 * zoom, sy - 18 * zoom + ripeBounce, 4.5 * zoom, 6.5 * zoom, -0.2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#eab308';
+              ctx.fillRect(sx - 5 * zoom, sy - 23 * zoom + ripeBounce, 1.5 * zoom, 3 * zoom);
+              ctx.fillRect(sx + 6 * zoom, sy - 25 * zoom + ripeBounce, 1.5 * zoom, 3 * zoom);
             } else {
-              // Carrot or default
               ctx.beginPath();
               ctx.ellipse(sx, sy - 16 * zoom + ripeBounce, 7 * zoom, 9 * zoom, 0, 0, Math.PI * 2);
               ctx.fill();
             }
 
-            // Harvest Sickle Prompt badge floating over ripe crop
             if (isReady) {
               const badgeY = sy - 36 * zoom + Math.sin(now / 300) * 3;
               ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
@@ -646,7 +851,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.lineWidth = 2 * zoom;
               ctx.stroke();
 
-              // Icon inside badge
               ctx.font = `${Math.floor(12 * zoom)}px sans-serif`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
@@ -655,61 +859,165 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           }
         }
 
-        // STRUCTURES
+        // STRUCTURES (Upgraded Architecture with Smooth Lighting)
         if (tile.structure) {
           const st = tile.structure.type;
+          drawSoftShadow(ctx, sx, sy, 26 * zoom, 14 * zoom);
 
           if (st === 'farmhouse') {
-            const hColor = tile.structure.colorTheme || state.houseColor || '#b91c1c';
-            // House base block
-            ctx.fillStyle = hColor;
-            ctx.beginPath();
-            ctx.moveTo(sx, sy - 50 * zoom);
-            ctx.lineTo(sx + 34 * zoom, sy - 32 * zoom);
-            ctx.lineTo(sx + 34 * zoom, sy - 6 * zoom);
-            ctx.lineTo(sx, sy + 12 * zoom);
-            ctx.lineTo(sx - 34 * zoom, sy - 6 * zoom);
-            ctx.lineTo(sx - 34 * zoom, sy - 32 * zoom);
-            ctx.closePath();
-            ctx.fill();
+            const houseLevel = state.house?.level || 1;
+            const hColor = state.house?.exteriorColor || '#b91c1c';
+            const roofColor = state.house?.roofColor || '#450a0a';
 
-            // Roof
-            ctx.fillStyle = '#450a0a';
-            ctx.beginPath();
-            ctx.moveTo(sx, sy - 68 * zoom);
-            ctx.lineTo(sx + 38 * zoom, sy - 46 * zoom);
-            ctx.lineTo(sx, sy - 30 * zoom);
-            ctx.lineTo(sx - 38 * zoom, sy - 46 * zoom);
-            ctx.closePath();
-            ctx.fill();
+            if (houseLevel >= 3) {
+              // Level 3: Grand Victorian Country Estate with wrap porch & turret
+              ctx.fillStyle = hColor;
+              ctx.fillRect(sx - 36 * zoom, sy - 48 * zoom, 72 * zoom, 48 * zoom);
 
-            // Door
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(sx - 6 * zoom, sy - 12 * zoom, 12 * zoom, 18 * zoom);
+              // Roof
+              ctx.fillStyle = roofColor;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy - 78 * zoom);
+              ctx.lineTo(sx + 42 * zoom, sy - 48 * zoom);
+              ctx.lineTo(sx - 42 * zoom, sy - 48 * zoom);
+              ctx.closePath();
+              ctx.fill();
 
-            // Windows
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(sx - 24 * zoom, sy - 24 * zoom, 10 * zoom, 10 * zoom);
-            ctx.fillRect(sx + 14 * zoom, sy - 24 * zoom, 10 * zoom, 10 * zoom);
+              // Turret / Cupola
+              ctx.fillStyle = '#f8fafc';
+              ctx.fillRect(sx + 18 * zoom, sy - 88 * zoom, 16 * zoom, 18 * zoom);
+              ctx.fillStyle = roofColor;
+              ctx.beginPath();
+              ctx.moveTo(sx + 26 * zoom, sy - 100 * zoom);
+              ctx.lineTo(sx + 36 * zoom, sy - 88 * zoom);
+              ctx.lineTo(sx + 16 * zoom, sy - 88 * zoom);
+              ctx.closePath();
+              ctx.fill();
+
+              // Porch Columns & Railing
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(sx - 34 * zoom, sy - 18 * zoom, 4 * zoom, 18 * zoom);
+              ctx.fillRect(sx - 12 * zoom, sy - 18 * zoom, 4 * zoom, 18 * zoom);
+              ctx.fillRect(sx + 12 * zoom, sy - 18 * zoom, 4 * zoom, 18 * zoom);
+              ctx.fillRect(sx + 30 * zoom, sy - 18 * zoom, 4 * zoom, 18 * zoom);
+              ctx.fillRect(sx - 34 * zoom, sy - 10 * zoom, 68 * zoom, 3 * zoom);
+
+              // Glowing Stained Glass Windows
+              ctx.fillStyle = '#fef08a';
+              ctx.fillRect(sx - 26 * zoom, sy - 38 * zoom, 12 * zoom, 14 * zoom);
+              ctx.fillRect(sx + 6 * zoom, sy - 38 * zoom, 12 * zoom, 14 * zoom);
+            } else if (houseLevel === 2) {
+              // Level 2: Pastoral 2-Story Manor with dormers
+              ctx.fillStyle = hColor;
+              ctx.fillRect(sx - 32 * zoom, sy - 42 * zoom, 64 * zoom, 42 * zoom);
+
+              // Mansard Roof
+              ctx.fillStyle = roofColor;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy - 68 * zoom);
+              ctx.lineTo(sx + 36 * zoom, sy - 42 * zoom);
+              ctx.lineTo(sx - 36 * zoom, sy - 42 * zoom);
+              ctx.closePath();
+              ctx.fill();
+
+              // Dormer windows
+              ctx.fillStyle = '#f8fafc';
+              ctx.fillRect(sx - 14 * zoom, sy - 60 * zoom, 10 * zoom, 12 * zoom);
+              ctx.fillRect(sx + 4 * zoom, sy - 60 * zoom, 10 * zoom, 12 * zoom);
+              ctx.fillStyle = '#fef08a';
+              ctx.fillRect(sx - 12 * zoom, sy - 58 * zoom, 6 * zoom, 8 * zoom);
+              ctx.fillRect(sx + 6 * zoom, sy - 58 * zoom, 6 * zoom, 8 * zoom);
+
+              // Flower boxes
+              ctx.fillStyle = '#f43f5e';
+              ctx.fillRect(sx - 24 * zoom, sy - 18 * zoom, 10 * zoom, 3 * zoom);
+              ctx.fillRect(sx + 14 * zoom, sy - 18 * zoom, 10 * zoom, 3 * zoom);
+            } else {
+              // Level 1: Cozy Timber Cabin
+              ctx.fillStyle = hColor;
+              ctx.fillRect(sx - 26 * zoom, sy - 38 * zoom, 52 * zoom, 38 * zoom);
+
+              // Roof
+              ctx.fillStyle = roofColor;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy - 60 * zoom);
+              ctx.lineTo(sx + 30 * zoom, sy - 38 * zoom);
+              ctx.lineTo(sx - 30 * zoom, sy - 38 * zoom);
+              ctx.closePath();
+              ctx.fill();
+
+              // Door & Window
+              ctx.fillStyle = '#fef08a';
+              ctx.fillRect(sx - 6 * zoom, sy - 14 * zoom, 12 * zoom, 14 * zoom);
+              ctx.fillRect(sx + 10 * zoom, sy - 28 * zoom, 10 * zoom, 10 * zoom);
+            }
 
             // Chimney with cozy rising smoke
             ctx.fillStyle = '#78350f';
-            ctx.fillRect(sx + 16 * zoom, sy - 74 * zoom, 8 * zoom, 18 * zoom);
-
-            // Smoke particles puff
+            ctx.fillRect(sx + 16 * zoom, sy - 72 * zoom, 8 * zoom, 18 * zoom);
             if (Math.random() < 0.1) {
-              spawnParticle(sx + 20 * zoom, sy - 76 * zoom, 'smoke', {
+              spawnParticle(sx + 20 * zoom, sy - 74 * zoom, 'smoke', {
                 size: 4 + Math.random() * 4,
                 color: 'rgba(240, 240, 240, 0.45)',
                 maxLife: 60,
               });
             }
+          } else if (st === 'cottage') {
+            // Guest Cottage
+            ctx.fillStyle = '#0f766e';
+            ctx.fillRect(sx - 22 * zoom, sy - 32 * zoom, 44 * zoom, 32 * zoom);
+            ctx.fillStyle = '#134e4a';
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 50 * zoom);
+            ctx.lineTo(sx + 26 * zoom, sy - 32 * zoom);
+            ctx.lineTo(sx - 26 * zoom, sy - 32 * zoom);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(sx - 5 * zoom, sy - 12 * zoom, 10 * zoom, 12 * zoom);
+          } else if (st === 'greenhouse') {
+            // Botanical Conservatory Glass Dome
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.beginPath();
+            ctx.arc(sx, sy - 16 * zoom, 22 * zoom, Math.PI, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2 * zoom;
+            ctx.stroke();
+
+            // Lush greenery visible inside
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(sx - 8 * zoom, sy - 10 * zoom, 8 * zoom, 0, Math.PI * 2);
+            ctx.arc(sx + 8 * zoom, sy - 10 * zoom, 8 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (st === 'gazebo') {
+            // Garden Gazebo
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(sx - 18 * zoom, sy - 28 * zoom, 4 * zoom, 28 * zoom);
+            ctx.fillRect(sx + 14 * zoom, sy - 28 * zoom, 4 * zoom, 28 * zoom);
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 42 * zoom);
+            ctx.lineTo(sx + 22 * zoom, sy - 28 * zoom);
+            ctx.lineTo(sx - 22 * zoom, sy - 28 * zoom);
+            ctx.closePath();
+            ctx.fill();
+          } else if (st === 'shed') {
+            // Artisan Workshop
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(sx - 20 * zoom, sy - 28 * zoom, 40 * zoom, 28 * zoom);
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 40 * zoom);
+            ctx.lineTo(sx + 24 * zoom, sy - 28 * zoom);
+            ctx.lineTo(sx - 24 * zoom, sy - 28 * zoom);
+            ctx.closePath();
+            ctx.fill();
           } else if (st === 'barn') {
-            // Classic Red Barn
             ctx.fillStyle = '#dc2626';
             ctx.fillRect(sx - 28 * zoom, sy - 44 * zoom, 56 * zoom, 44 * zoom);
-
-            // Gambrel Barn Roof
             ctx.fillStyle = '#991b1b';
             ctx.beginPath();
             ctx.moveTo(sx, sy - 64 * zoom);
@@ -717,8 +1025,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.lineTo(sx - 32 * zoom, sy - 44 * zoom);
             ctx.closePath();
             ctx.fill();
-
-            // Barn Door with X
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(sx - 14 * zoom, sy - 24 * zoom, 28 * zoom, 24 * zoom);
             ctx.strokeStyle = '#dc2626';
@@ -729,12 +1035,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.moveTo(sx + 14 * zoom, sy - 24 * zoom);
             ctx.lineTo(sx - 14 * zoom, sy);
             ctx.stroke();
-
-            // Hayloft window
-            ctx.fillStyle = '#eab308';
-            ctx.fillRect(sx - 7 * zoom, sy - 40 * zoom, 14 * zoom, 12 * zoom);
           } else if (st === 'windmill') {
-            // Windmill tower
             ctx.fillStyle = '#f1f5f9';
             ctx.beginPath();
             ctx.moveTo(sx - 12 * zoom, sy - 54 * zoom);
@@ -746,24 +1047,15 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.strokeStyle = '#94a3b8';
             ctx.stroke();
 
-            // Dome cap
-            ctx.fillStyle = '#0284c7';
-            ctx.beginPath();
-            ctx.arc(sx, sy - 54 * zoom, 12 * zoom, Math.PI, 0);
-            ctx.fill();
-
-            // Rotating 4 sails
             const cx = sx;
             const cy = sy - 54 * zoom;
             const rot = windmillAngleRef.current;
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(rot);
-
             ctx.fillStyle = '#fef08a';
             ctx.strokeStyle = '#854d0e';
             ctx.lineWidth = 1.5 * zoom;
-
             for (let b = 0; b < 4; b++) {
               ctx.rotate(Math.PI / 2);
               ctx.strokeRect(0, -3 * zoom, 28 * zoom, 6 * zoom);
@@ -771,7 +1063,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             }
             ctx.restore();
           } else if (st === 'well') {
-            // Stone Well
             ctx.fillStyle = '#64748b';
             ctx.beginPath();
             ctx.ellipse(sx, sy - 6 * zoom, 16 * zoom, 10 * zoom, 0, 0, Math.PI * 2);
@@ -780,8 +1071,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.beginPath();
             ctx.ellipse(sx, sy - 8 * zoom, 12 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-
-            // Wooden Roof on posts
             ctx.fillStyle = '#78350f';
             ctx.fillRect(sx - 14 * zoom, sy - 28 * zoom, 3 * zoom, 22 * zoom);
             ctx.fillRect(sx + 11 * zoom, sy - 28 * zoom, 3 * zoom, 22 * zoom);
@@ -793,15 +1082,10 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.closePath();
             ctx.fill();
           } else if (st === 'beehive') {
-            // Wooden Langstroth hive boxes
             ctx.fillStyle = '#f59e0b';
             ctx.fillRect(sx - 12 * zoom, sy - 24 * zoom, 24 * zoom, 10 * zoom);
             ctx.fillStyle = '#d97706';
             ctx.fillRect(sx - 14 * zoom, sy - 14 * zoom, 28 * zoom, 12 * zoom);
-            ctx.fillStyle = '#b45309';
-            ctx.fillRect(sx - 16 * zoom, sy - 28 * zoom, 32 * zoom, 5 * zoom);
-
-            // Flying tiny bees
             for (let b = 0; b < 3; b++) {
               const bx = sx + Math.cos(now / 300 + b * 2) * 16 * zoom;
               const by = sy - 22 * zoom + Math.sin(now / 200 + b * 2) * 8 * zoom;
@@ -809,11 +1093,8 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.beginPath();
               ctx.arc(bx, by, 2.5 * zoom, 0, Math.PI * 2);
               ctx.fill();
-              ctx.fillStyle = '#0f172a';
-              ctx.fillRect(bx - 1, by - 1, 1, 2);
             }
           } else if (st === 'coop') {
-            // Chicken Coop
             ctx.fillStyle = '#b45309';
             ctx.fillRect(sx - 20 * zoom, sy - 30 * zoom, 40 * zoom, 30 * zoom);
             ctx.fillStyle = '#78350f';
@@ -825,18 +1106,68 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.fill();
             ctx.fillStyle = '#fef08a';
             ctx.fillRect(sx - 6 * zoom, sy - 16 * zoom, 12 * zoom, 12 * zoom);
+          } else if (st === 'bahay_kubo') {
+            // Traditional Filipino Bahay Kubo (Bamboo Stilts + Nipa Thatch Roof)
+            // 1. Bamboo Stilts (Haligi)
+            ctx.fillStyle = '#ca8a04';
+            ctx.fillRect(sx - 22 * zoom, sy - 16 * zoom, 4 * zoom, 18 * zoom);
+            ctx.fillRect(sx + 18 * zoom, sy - 16 * zoom, 4 * zoom, 18 * zoom);
+            ctx.fillRect(sx - 8 * zoom, sy - 14 * zoom, 3.5 * zoom, 16 * zoom);
+            ctx.fillRect(sx + 6 * zoom, sy - 14 * zoom, 3.5 * zoom, 16 * zoom);
+
+            // Bamboo Ladder (Hagdan)
+            ctx.fillStyle = '#a16207';
+            ctx.fillRect(sx - 3 * zoom, sy - 10 * zoom, 2 * zoom, 12 * zoom);
+            ctx.fillRect(sx + 3 * zoom, sy - 10 * zoom, 2 * zoom, 12 * zoom);
+            ctx.fillRect(sx - 3 * zoom, sy - 6 * zoom, 8 * zoom, 2 * zoom);
+            ctx.fillRect(sx - 3 * zoom, sy - 2 * zoom, 8 * zoom, 2 * zoom);
+
+            // 2. Bamboo Floor / Woven Sawali Walls
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(sx - 26 * zoom, sy - 38 * zoom, 52 * zoom, 24 * zoom);
+
+            // Open Awning Windows (Tukod / bamboo prop)
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(sx - 18 * zoom, sy - 32 * zoom, 10 * zoom, 10 * zoom);
+            ctx.fillRect(sx + 8 * zoom, sy - 32 * zoom, 10 * zoom, 10 * zoom);
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(sx - 16 * zoom, sy - 30 * zoom, 6 * zoom, 6 * zoom);
+            ctx.fillRect(sx + 10 * zoom, sy - 30 * zoom, 6 * zoom, 6 * zoom);
+
+            // 3. High Thatched Nipa / Cogon Pyramid Roof (Palaspas)
+            ctx.fillStyle = '#a16207';
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 64 * zoom);
+            ctx.lineTo(sx + 32 * zoom, sy - 36 * zoom);
+            ctx.lineTo(sx - 32 * zoom, sy - 36 * zoom);
+            ctx.closePath();
+            ctx.fill();
+
+            // Roof texture ridge lines
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2 * zoom;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 64 * zoom);
+            ctx.lineTo(sx, sy - 36 * zoom);
+            ctx.stroke();
+
+            // Overhanging thatch fringes
+            ctx.fillStyle = '#ca8a04';
+            for (let f = -5; f <= 5; f++) {
+              ctx.fillRect(sx + f * 6 * zoom, sy - 36 * zoom, 4 * zoom, 4 * zoom);
+            }
           }
         }
 
         // DECOR & TREES
         if (tile.decor) {
           const dt = tile.decor.type;
+          drawSoftShadow(ctx, sx, sy, 18 * zoom, 8 * zoom);
+
           if (dt === 'apple_tree' || dt === 'cherry_tree' || dt === 'pine_tree') {
-            // Tree trunk
             ctx.fillStyle = '#78350f';
             ctx.fillRect(sx - 5 * zoom, sy - 18 * zoom, 10 * zoom, 18 * zoom);
 
-            // Foliage
             if (dt === 'cherry_tree') {
               ctx.fillStyle = '#f472b6';
               ctx.beginPath();
@@ -851,7 +1182,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.beginPath();
               ctx.arc(sx, sy - 34 * zoom, 22 * zoom, 0, Math.PI * 2);
               ctx.fill();
-              // Red apples
               ctx.fillStyle = '#ef4444';
               [[-8, -32], [6, -38], [-4, -44], [10, -28]].forEach(([ax, ay]) => {
                 ctx.beginPath();
@@ -859,7 +1189,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
                 ctx.fill();
               });
             } else {
-              // Pine tree
               ctx.fillStyle = '#14532d';
               ctx.beginPath();
               ctx.moveTo(sx, sy - 54 * zoom);
@@ -874,11 +1203,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.fillRect(sx - 12 * zoom, sy - 22 * zoom, 24 * zoom, 4 * zoom);
             ctx.fillStyle = '#3b82f6';
             ctx.fillRect(sx - 5 * zoom, sy - 20 * zoom, 10 * zoom, 12 * zoom);
-            // Hat
-            ctx.fillStyle = '#78350f';
-            ctx.beginPath();
-            ctx.arc(sx, sy - 26 * zoom, 5 * zoom, 0, Math.PI * 2);
-            ctx.fill();
           } else if (dt === 'lantern') {
             ctx.fillStyle = '#334155';
             ctx.fillRect(sx - 2 * zoom, sy - 28 * zoom, 4 * zoom, 28 * zoom);
@@ -887,7 +1211,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.arc(sx, sy - 28 * zoom, 5 * zoom, 0, Math.PI * 2);
             ctx.fill();
 
-            // Glow aura
             const glowGrad = ctx.createRadialGradient(sx, sy - 28 * zoom, 2 * zoom, sx, sy - 28 * zoom, 28 * zoom);
             glowGrad.addColorStop(0, 'rgba(254, 240, 138, 0.45)');
             glowGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
@@ -901,6 +1224,8 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         // ANIMALS
         if (tile.animal) {
           const an = tile.animal;
+          drawSoftShadow(ctx, sx + an.offsetX * zoom, sy + an.offsetY * zoom, 12 * zoom, 6 * zoom);
+
           const squash = animalSquashRef.current[an.id] || 0;
           const sxScale = 1 + squash * 0.4;
           const syScale = 1 - squash * 0.3;
@@ -911,41 +1236,33 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           ctx.scale(sxScale, syScale);
 
           if (an.type === 'cow') {
-            // Jersey Dairy Cow
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(0, -12 * zoom, 16 * zoom, 11 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Black patches
             ctx.fillStyle = '#1e293b';
             ctx.beginPath();
             ctx.ellipse(-4 * zoom, -14 * zoom, 6 * zoom, 5 * zoom, 0.3, 0, Math.PI * 2);
             ctx.ellipse(5 * zoom, -11 * zoom, 7 * zoom, 6 * zoom, -0.2, 0, Math.PI * 2);
             ctx.fill();
-            // Head
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.ellipse(-14 * zoom, -18 * zoom + idleWiggle, 8 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Pink snout
             ctx.fillStyle = '#fbcfe8';
             ctx.beginPath();
             ctx.ellipse(-18 * zoom, -16 * zoom + idleWiggle, 5 * zoom, 4 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Cute eye
             ctx.fillStyle = '#0f172a';
             ctx.beginPath();
             ctx.arc(-14 * zoom, -20 * zoom + idleWiggle, 1.5 * zoom, 0, Math.PI * 2);
             ctx.fill();
-            // Horns
             ctx.fillStyle = '#fef08a';
             ctx.fillRect(-12 * zoom, -26 * zoom + idleWiggle, 2 * zoom, 4 * zoom);
-            // Legs
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(-10 * zoom, -3 * zoom, 4 * zoom, 8 * zoom);
             ctx.fillRect(6 * zoom, -3 * zoom, 4 * zoom, 8 * zoom);
           } else if (an.type === 'sheep') {
-            // Fluffy Merino Sheep
             ctx.fillStyle = '#f8fafc';
             for (let puff = 0; puff < 6; puff++) {
               const px = Math.cos((puff * Math.PI) / 3) * 8 * zoom;
@@ -954,32 +1271,26 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
               ctx.arc(px, py, 7 * zoom, 0, Math.PI * 2);
               ctx.fill();
             }
-            // Head
             ctx.fillStyle = '#334155';
             ctx.beginPath();
             ctx.ellipse(-11 * zoom, -14 * zoom + idleWiggle, 6 * zoom, 5 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Eye
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(-12 * zoom, -15 * zoom + idleWiggle, 1.2 * zoom, 0, Math.PI * 2);
             ctx.fill();
-            // Legs
             ctx.fillStyle = '#334155';
             ctx.fillRect(-6 * zoom, -2 * zoom, 3 * zoom, 6 * zoom);
             ctx.fillRect(4 * zoom, -2 * zoom, 3 * zoom, 6 * zoom);
           } else if (an.type === 'chicken') {
-            // White clucking hen
             ctx.fillStyle = '#f8fafc';
             ctx.beginPath();
             ctx.ellipse(0, -9 * zoom + idleWiggle, 9 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Red comb
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
             ctx.arc(-6 * zoom, -17 * zoom + idleWiggle, 3 * zoom, 0, Math.PI * 2);
             ctx.fill();
-            // Yellow beak
             ctx.fillStyle = '#f59e0b';
             ctx.beginPath();
             ctx.moveTo(-11 * zoom, -11 * zoom + idleWiggle);
@@ -987,30 +1298,24 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.lineTo(-7 * zoom, -9 * zoom + idleWiggle);
             ctx.closePath();
             ctx.fill();
-            // Eye
             ctx.fillStyle = '#0f172a';
             ctx.beginPath();
             ctx.arc(-6 * zoom, -13 * zoom + idleWiggle, 1.2 * zoom, 0, Math.PI * 2);
             ctx.fill();
-            // Legs
             ctx.fillStyle = '#f59e0b';
             ctx.fillRect(-2 * zoom, -2 * zoom, 2 * zoom, 4 * zoom);
           } else if (an.type === 'dog') {
-            // Golden Retriever
             ctx.fillStyle = '#f59e0b';
             ctx.beginPath();
             ctx.ellipse(0, -10 * zoom, 12 * zoom, 8 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Head
             ctx.beginPath();
             ctx.ellipse(-10 * zoom, -14 * zoom + idleWiggle, 6 * zoom, 6 * zoom, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Floppy ear
             ctx.fillStyle = '#d97706';
             ctx.beginPath();
             ctx.ellipse(-7 * zoom, -12 * zoom + idleWiggle, 3 * zoom, 6 * zoom, 0.4, 0, Math.PI * 2);
             ctx.fill();
-            // Wagging tail
             const tailWag = Math.sin(now / 150) * 0.4;
             ctx.save();
             ctx.translate(10 * zoom, -11 * zoom);
@@ -1018,10 +1323,76 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.fillStyle = '#f59e0b';
             ctx.fillRect(0, -2 * zoom, 8 * zoom, 4 * zoom);
             ctx.restore();
+          } else if (an.type === 'carabao') {
+            // Water Buffalo (Kalabaw)
+            // Heavy charcoal/slate body
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.ellipse(0, -13 * zoom, 18 * zoom, 12 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mud splatter details on lower belly
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.ellipse(-4 * zoom, -5 * zoom, 8 * zoom, 3 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White / cream chevron neck band (Signature Kalabaw marking!)
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 3 * zoom;
+            ctx.beginPath();
+            ctx.arc(-8 * zoom, -15 * zoom + idleWiggle, 8 * zoom, 0.4, 1.8);
+            ctx.stroke();
+
+            // Sturdy Head
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.ellipse(-15 * zoom, -17 * zoom + idleWiggle, 9 * zoom, 8 * zoom, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Snout with broad nostrils
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.ellipse(-20 * zoom, -16 * zoom + idleWiggle, 6 * zoom, 5 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-22 * zoom, -17 * zoom + idleWiggle, 1.5 * zoom, 0, Math.PI * 2);
+            ctx.arc(-22 * zoom, -14 * zoom + idleWiggle, 1.5 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Friendly Eye
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-15 * zoom, -20 * zoom + idleWiggle, 1.8 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-15.5 * zoom, -20.5 * zoom + idleWiggle, 0.6 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sweeping Curved Horns (Majestic backward crescent horns)
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3.5 * zoom;
+            ctx.beginPath();
+            ctx.moveTo(-13 * zoom, -22 * zoom + idleWiggle);
+            ctx.quadraticCurveTo(-6 * zoom, -32 * zoom + idleWiggle, 4 * zoom, -26 * zoom + idleWiggle);
+            ctx.stroke();
+
+            // Wooden Yoke on back (for plowing!)
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(-6 * zoom, -20 * zoom, 12 * zoom, 3 * zoom);
+
+            // Sturdy Legs & Hooves
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-12 * zoom, -3 * zoom, 5 * zoom, 9 * zoom);
+            ctx.fillRect(8 * zoom, -3 * zoom, 5 * zoom, 9 * zoom);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-12 * zoom, 4 * zoom, 5 * zoom, 2 * zoom);
+            ctx.fillRect(8 * zoom, 4 * zoom, 5 * zoom, 2 * zoom);
           }
           ctx.restore();
 
-          // Produce bubble indicator if ready
           if (an.produceReady) {
             const bubbleY = sy - 28 * zoom + Math.sin(now / 300) * 3;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
@@ -1035,13 +1406,13 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.font = `${Math.floor(11 * zoom)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const icon = an.type === 'cow' ? '🥛' : an.type === 'chicken' ? '🥚' : an.type === 'sheep' ? '🧶' : '💖';
+            const icon = (an.type === 'cow' || an.type === 'carabao') ? '🥛' : an.type === 'chicken' ? '🥚' : an.type === 'sheep' ? '🧶' : '💖';
             ctx.fillText(icon, sx, bubbleY);
           }
         }
       });
 
-      // 3. Hover / Touch cursor diamond
+      // 4. Hover Cursor
       const hx = interactionRef.current.hoveredGridX;
       const hy = interactionRef.current.hoveredGridY;
       if (hx >= 0 && hx < GRID_SIZE && hy >= 0 && hy < GRID_SIZE) {
@@ -1049,12 +1420,15 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         const tw = TILE_WIDTH * zoom;
         const th = TILE_HEIGHT * zoom;
 
-        let cursorColor = 'rgba(255, 255, 255, 0.45)';
+        let cursorColor = 'rgba(255, 255, 255, 0.4)';
         let strokeColor = '#ffffff';
 
         if (movingTileRef.current) {
           cursorColor = 'rgba(56, 189, 248, 0.45)';
           strokeColor = '#38bdf8';
+        } else if (state.selectedTool === 'carabao_plow') {
+          cursorColor = 'rgba(180, 83, 9, 0.45)';
+          strokeColor = '#f59e0b';
         } else if (state.selectedTool === 'harvest') {
           cursorColor = 'rgba(250, 204, 21, 0.45)';
           strokeColor = '#facc15';
@@ -1066,11 +1440,42 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           strokeColor = '#4ade80';
         }
 
-        drawIsometricDiamond(ctx, sx, sy, tw, th, cursorColor, strokeColor, 2 * zoom);
+        // Draw 3-tile furrow preview if carabao_plow is active
+        if (state.selectedTool === 'carabao_plow') {
+          [-1, 1].forEach((dx) => {
+            const sideX = hx + dx;
+            if (sideX >= 0 && sideX < GRID_SIZE) {
+              const sidePos = gridToScreen(sideX, hy, width, height);
+              ctx.beginPath();
+              ctx.moveTo(sidePos.sx, sidePos.sy - th / 2);
+              ctx.lineTo(sidePos.sx + tw / 2, sidePos.sy);
+              ctx.lineTo(sidePos.sx, sidePos.sy + th / 2);
+              ctx.lineTo(sidePos.sx - tw / 2, sidePos.sy);
+              ctx.closePath();
+              ctx.fillStyle = 'rgba(217, 119, 6, 0.28)';
+              ctx.fill();
+              ctx.strokeStyle = '#d97706';
+              ctx.lineWidth = 1.5 * zoom;
+              ctx.stroke();
+            }
+          });
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - th / 2);
+        ctx.lineTo(sx + tw / 2, sy);
+        ctx.lineTo(sx, sy + th / 2);
+        ctx.lineTo(sx - tw / 2, sy);
+        ctx.closePath();
+        ctx.fillStyle = cursorColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2 * zoom;
+        ctx.stroke();
       }
 
-      // 4. Update and draw particles
-      particlesRef.current.forEach((p, idx) => {
+      // 5. Particles Update & Render
+      particlesRef.current.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
         p.life += 1;
@@ -1103,36 +1508,44 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           ctx.arc(p.x, p.y, (p.size || 5) * (1 + p.life / p.maxLife), 0, Math.PI * 2);
           ctx.fill();
         } else if (p.type === 'weather') {
-          // Floating seasonal ambient weather
-          if (season === 'spring') {
-            // Cherry blossom petal
-            ctx.fillStyle = '#fbcfe8';
+          // Weather Rendering
+          if (weather === 'rain' || weather === 'thunderstorm') {
+            // Rain drop streaks
+            ctx.strokeStyle = 'rgba(186, 230, 253, 0.75)';
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.ellipse(p.x, p.y, (p.size || 4), (p.size || 4) * 0.5, p.life * 0.05, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (season === 'autumn') {
-            // Golden leaf
-            ctx.fillStyle = '#f59e0b';
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, (p.size || 4), (p.size || 4) * 0.6, p.life * 0.08, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (season === 'winter') {
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x - 3, p.y + 12);
+            ctx.stroke();
+          } else if (weather === 'snow' || season === 'winter') {
             // Snow flake
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(p.x, p.y, (p.size || 2.5), 0, Math.PI * 2);
             ctx.fill();
+          } else if (weather === 'petal_breeze' || season === 'spring') {
+            // Sakura Petals
+            ctx.fillStyle = '#fbcfe8';
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, (p.size || 4), (p.size || 4) * 0.5, p.life * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (weather === 'autumn_wind' || season === 'autumn') {
+            // Autumn leaves
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, (p.size || 4), (p.size || 4) * 0.6, p.life * 0.08, 0, Math.PI * 2);
+            ctx.fill();
           } else {
-            // Summer golden sun sparkle
+            // Sunny sunbeams & dust motes
             ctx.fillStyle = '#fef08a';
             ctx.beginPath();
             ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
             ctx.fill();
           }
 
-          // Wrap weather particles around screen
-          if (p.x > width) p.x = -10;
-          if (p.y > height) p.y = -10;
+          // Screen wrapping
+          if (p.x > width + 20) p.x = -10;
+          if (p.y > height + 20) p.y = -10;
         }
 
         ctx.restore();
@@ -1141,15 +1554,29 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       // Purge dead particles
       particlesRef.current = particlesRef.current.filter((p) => p.type === 'weather' || p.life < p.maxLife);
 
-      // 5. Ambient lighting overlay (Time of Day & Season)
+      // 6. Ambient Lighting & Weather Overlays
+      if (weather === 'thunderstorm') {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+        ctx.fillRect(0, 0, width, height);
+      } else if (weather === 'rain') {
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.22)';
+        ctx.fillRect(0, 0, width, height);
+      }
+
       if (timeOfDay === 'sunset') {
         ctx.fillStyle = 'rgba(251, 146, 60, 0.12)';
         ctx.fillRect(0, 0, width, height);
       } else if (timeOfDay === 'night') {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.38)';
         ctx.fillRect(0, 0, width, height);
       } else if (timeOfDay === 'morning') {
         ctx.fillStyle = 'rgba(254, 240, 138, 0.06)';
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      // Lightning screen flash
+      if (lightningFlashRef.current > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${lightningFlashRef.current * 0.6})`;
         ctx.fillRect(0, 0, width, height);
       }
 
@@ -1182,7 +1609,6 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* Moving Mode Banner if active */}
       {movingTile && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 bg-sky-950/90 text-sky-200 border border-sky-400/40 rounded-xl shadow-lg backdrop-blur-md">
           <span className="text-sm font-medium">
@@ -1190,7 +1616,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
           </span>
           <button
             onClick={onCancelMove}
-            className="px-2.5 py-1 text-xs font-semibold bg-sky-500/20 hover:bg-sky-500/30 text-white rounded-lg transition-colors"
+            className="px-2.5 py-1 text-xs font-semibold bg-sky-500/20 hover:bg-sky-500/30 text-white rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>

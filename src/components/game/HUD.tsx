@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameState } from '../../types/game';
+import { GameState, WeatherType } from '../../types/game';
 import { SEASONS_INFO } from '../../constants/gameData';
 import { sound } from '../../services/audio';
 
@@ -10,8 +10,11 @@ interface HUDProps {
   onOpenTasks: () => void;
   onOpenInventory: () => void;
   onOpenSettings: () => void;
+  onOpenHouseCustomizer: () => void;
+  onOpenAutomation: () => void;
   onAdvanceDay: () => void;
   onToggleTimeOfDay: () => void;
+  onCycleWeather: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -21,15 +24,28 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenTasks,
   onOpenInventory,
   onOpenSettings,
+  onOpenHouseCustomizer,
+  onOpenAutomation,
   onAdvanceDay,
   onToggleTimeOfDay,
+  onCycleWeather,
 }) => {
   const xpNeeded = gameState.level * 100;
   const xpPercent = Math.min(100, Math.round((gameState.xp / xpNeeded) * 100));
-  const seasonInfo = SEASONS_INFO[gameState.season];
 
   const pendingOrdersCount = gameState.orders.filter((o) => !o.completed).length;
   const uncompletedTasksCount = gameState.tasks.filter((t) => !t.claimed).length;
+
+  const weatherIcons: Record<WeatherType, { icon: string; name: string }> = {
+    sunny: { icon: '☀️', name: 'Sunny' },
+    rain: { icon: '🌧️', name: 'Rain' },
+    thunderstorm: { icon: '⛈️', name: 'Storm' },
+    snow: { icon: '❄️', name: 'Snow' },
+    petal_breeze: { icon: '🌸', name: 'Petals' },
+    autumn_wind: { icon: '🍂', name: 'Wind' },
+  };
+
+  const currentWeather = weatherIcons[gameState.weather || 'sunny'];
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 sm:p-4">
@@ -41,11 +57,11 @@ export const HUD: React.FC<HUDProps> = ({
             {gameState.level}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-slate-100 truncate max-w-[110px] sm:max-w-[160px]">
+            <span className="text-xs font-semibold text-slate-100 truncate max-w-[110px] sm:max-w-[150px]">
               {gameState.farmName}
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="w-16 sm:w-24 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
+              <div className="w-16 sm:w-20 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
                 <div
                   className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-300"
                   style={{ width: `${xpPercent}%` }}
@@ -59,7 +75,7 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
 
         {/* Center: Season, Day, Weather & Time of Day */}
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/80 text-slate-200 rounded-2xl px-3 py-1.5 border border-emerald-500/20 shadow-md text-xs">
+        <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/85 text-slate-200 rounded-2xl px-3 py-1.5 border border-emerald-500/20 shadow-md text-xs">
           <button
             onClick={() => {
               sound.playTap();
@@ -76,9 +92,26 @@ export const HUD: React.FC<HUDProps> = ({
                 {gameState.season} Day {gameState.seasonDay}
               </span>
               <span className="text-[10px] text-slate-400 leading-tight hidden sm:inline">
-                {seasonInfo.weather}
+                Tap to advance
               </span>
             </div>
+          </button>
+
+          <div className="h-5 w-[1px] bg-slate-700 mx-1" />
+
+          {/* Weather Toggle */}
+          <button
+            onClick={() => {
+              sound.playTap();
+              onCycleWeather();
+            }}
+            title={`Weather: ${currentWeather.name} (Tap to change)`}
+            className="flex items-center gap-1 px-1.5 py-1 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <span className="text-sm">{currentWeather.icon}</span>
+            <span className="text-[10px] text-slate-300 font-medium hidden md:inline">
+              {currentWeather.name}
+            </span>
           </button>
 
           <div className="h-5 w-[1px] bg-slate-700 mx-1" />
@@ -96,7 +129,7 @@ export const HUD: React.FC<HUDProps> = ({
           </button>
         </div>
 
-        {/* Right: Currency & Fast Settings */}
+        {/* Right: Currency & Settings */}
         <div className="pointer-events-auto flex items-center gap-2">
           {/* Coins */}
           <div className="flex items-center gap-1.5 bg-slate-900/80 border border-amber-500/30 rounded-2xl px-3 py-1.5 shadow-md">
@@ -131,8 +164,35 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
-      {/* Side Quick Actions (Shop, Orders, Tasks, Inventory) - placed on right thumb side */}
-      <div className="pointer-events-none self-end flex flex-col gap-2.5 mb-24">
+      {/* Side Quick Actions on right thumb side */}
+      <div className="pointer-events-none self-end flex flex-col gap-2 mb-20 sm:mb-24">
+        {/* House Architecture & Furniture Customizer Button */}
+        <button
+          onClick={() => {
+            sound.playTap();
+            onOpenHouseCustomizer();
+          }}
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs rounded-2xl shadow-lg border border-teal-300/40 active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-base">🏡</span>
+          <span className="hidden sm:inline">Homestead</span>
+        </button>
+
+        {/* Automation Hub Button */}
+        <button
+          onClick={() => {
+            sound.playTap();
+            onOpenAutomation();
+          }}
+          className="pointer-events-auto relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold text-xs rounded-2xl shadow-lg border border-amber-300/40 active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-base">⚙️</span>
+          <span className="hidden sm:inline">Auto Tech</span>
+          {(gameState.automation?.autoHarvestEnabled || gameState.automation?.autoPlantEnabled || gameState.automation?.autoFeedEnabled) && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
+          )}
+        </button>
+
         {/* Shop Button */}
         <button
           onClick={() => {

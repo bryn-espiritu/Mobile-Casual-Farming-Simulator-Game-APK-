@@ -25,6 +25,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   const tools: Array<{ mode: ToolMode; label: string; icon: string; description: string }> = [
     { mode: 'inspect', label: 'Inspect', icon: '✋', description: 'Tap animals & buildings' },
     { mode: 'plow', label: 'Plow', icon: '⛏️', description: 'Till grass into soil' },
+    { mode: 'carabao_plow', label: 'Kalabaw', icon: '🐃', description: 'Plow 3 fields at once with Water Buffalo' },
     { mode: 'plant', label: 'Plant', icon: '🌱', description: 'Sow seeds into soil' },
     { mode: 'water', label: 'Water', icon: '💧', description: 'Hydrate soil for 2x growth' },
     { mode: 'harvest', label: 'Harvest', icon: '🌾', description: 'Swipe to cut ripe crops' },

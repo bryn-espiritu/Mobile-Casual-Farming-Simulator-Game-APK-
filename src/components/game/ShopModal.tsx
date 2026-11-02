@@ -8,7 +8,8 @@ interface ShopModalProps {
   onClose: () => void;
   onBuySeed: (cropType: CropType, cost: number) => void;
   onBuyItem: (itemKey: string, itemName: string, cost: number, category: string) => void;
-  onSetHouseColor: (color: string) => void;
+  onOpenHouseCustomizer: () => void;
+  onOpenAutomation: () => void;
 }
 
 export const ShopModal: React.FC<ShopModalProps> = ({
@@ -16,13 +17,26 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onClose,
   onBuySeed,
   onBuyItem,
-  onSetHouseColor,
+  onOpenHouseCustomizer,
+  onOpenAutomation,
 }) => {
-  const [activeTab, setActiveTab] = useState<'seeds' | 'animals' | 'decor' | 'house'>('seeds');
+  const [activeTab, setActiveTab] = useState<'seeds' | 'buildings' | 'animals' | 'decor'>('seeds');
 
   const cropKeys = Object.keys(CROPS) as CropType[];
 
+  const buildingsCatalog = [
+    { id: 'building_bahay_kubo', name: 'Bahay Kubo', cost: 380, icon: '🛖', desc: 'Traditional bamboo stilt house with woven nipa palm roof.', category: 'building', minLevel: 1 },
+    { id: 'building_fish_pond', name: 'Palaisdaan Fish Pond', cost: 320, icon: '🐟', desc: 'Aquaculture pond stocked with Bangus (milkfish) & Tilapia.', category: 'building', minLevel: 1 },
+    { id: 'building_cottage', name: 'Guest Cottage', cost: 420, icon: '🏡', desc: 'Charming stone cottage retreat for visitors.', category: 'building', minLevel: 2 },
+    { id: 'building_greenhouse', name: 'Botanical Greenhouse', cost: 550, icon: '🏛️', desc: 'Glass conservatory allowing plants to thrive all seasons.', category: 'building', minLevel: 2 },
+    { id: 'building_gazebo', name: 'Floral Garden Gazebo', cost: 260, icon: '🌸', desc: 'Open-air timber gazebo with climbing climbing roses.', category: 'building', minLevel: 1 },
+    { id: 'building_shed', name: 'Artisan Workshop Shed', cost: 320, icon: '🛖', desc: 'Country workshop for woodcrafting and storage.', category: 'building', minLevel: 1 },
+    { id: 'building_well', name: 'Stone Brick Well', cost: 180, icon: '🪣', desc: 'Deep aquifer well that hydrates adjacent soil.', category: 'building', minLevel: 1 },
+    { id: 'building_windmill', name: 'Valley Windmill', cost: 600, icon: '⚙️', desc: 'Grinds wheat into flour and yields bonus revenue.', category: 'building', minLevel: 3 },
+  ];
+
   const animalsCatalog = [
+    { id: 'animal_carabao', name: 'Kalabaw (Water Buffalo)', cost: 380, icon: '🐃', produce: 'Rich Milk 🥛', desc: 'Hardworking Philippine water buffalo that plows fields and gives rich milk.', minLevel: 1 },
     { id: 'animal_chicken', name: 'Heritage Chicken', cost: 120, icon: '🐔', produce: 'Eggs 🥚', desc: 'Produces fresh brown eggs daily.', minLevel: 1 },
     { id: 'animal_cow', name: 'Jersey Dairy Cow', cost: 350, icon: '🐄', produce: 'Milk 🥛', desc: 'Gentle dairy cow providing rich milk.', minLevel: 2 },
     { id: 'animal_sheep', name: 'Merino Sheep', cost: 280, icon: '🐑', produce: 'Wool 🧶', desc: 'Fluffy sheep for warm sweater wool.', minLevel: 2 },
@@ -41,16 +55,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
     { id: 'water_pond', name: 'Koi & Duck Pond', cost: 220, icon: '🦆', desc: 'Reflective pond with gentle water ripples.', category: 'decor' },
   ];
 
-  const houseColors = [
-    { name: 'Classic Barn Red', hex: '#b91c1c' },
-    { name: 'Sage Green Meadow', hex: '#15803d' },
-    { name: 'Cotswold Warm Stone', hex: '#d97706' },
-    { name: 'Coastal Navy', hex: '#1e3a8a' },
-    { name: 'Cozy Plum', hex: '#7e22ce' },
-  ];
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-xl max-h-[85vh] bg-slate-900 border border-emerald-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
@@ -58,7 +64,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
             <span className="text-xl">🏪</span>
             <div>
               <h2 className="text-base sm:text-lg font-bold font-display text-white">Valley General Store</h2>
-              <p className="text-xs text-slate-400">Quality seeds, livestock & homestead supplies</p>
+              <p className="text-xs text-slate-400">Quality seeds, architecture, livestock & homestead supplies</p>
             </div>
           </div>
 
@@ -72,20 +78,47 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 sound.playTap();
                 onClose();
               }}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             >
               ✕
             </button>
           </div>
         </div>
 
+        {/* Quick Hub Shortcuts */}
+        <div className="px-4 py-2 bg-emerald-950/40 border-b border-slate-800 flex items-center justify-between gap-2">
+          <button
+            onClick={() => {
+              sound.playTap();
+              onClose();
+              onOpenHouseCustomizer();
+            }}
+            className="flex-1 py-1.5 px-2.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>🏡</span>
+            <span>House Interior & Furniture</span>
+          </button>
+
+          <button
+            onClick={() => {
+              sound.playTap();
+              onClose();
+              onOpenAutomation();
+            }}
+            className="flex-1 py-1.5 px-2.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>⚙️</span>
+            <span>Automation & Upgrades</span>
+          </button>
+        </div>
+
         {/* Tab Controls */}
         <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-slate-800 bg-slate-950/30 overflow-x-auto">
           {[
             { id: 'seeds', label: 'Crop Seeds', icon: '🌱' },
+            { id: 'buildings', label: 'Buildings & Houses', icon: '🏡' },
             { id: 'animals', label: 'Livestock', icon: '🐮' },
             { id: 'decor', label: 'Paths & Decor', icon: '🌸' },
-            { id: 'house', label: 'Homestead', icon: '🏡' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -149,6 +182,52 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                     >
                       <span>🪙</span>
                       <span className="font-mono tabular-nums">{crop.seedCost}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === 'buildings' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {buildingsCatalog.map((b) => {
+                const canAfford = gameState.coins >= b.cost;
+                const levelOk = gameState.level >= b.minLevel;
+
+                return (
+                  <div
+                    key={b.id}
+                    className="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 flex flex-col justify-between gap-2"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
+                        {b.icon}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-white">{b.name}</span>
+                          {!levelOk && (
+                            <span className="text-[10px] text-amber-400 font-mono">Lv {b.minLevel}</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{b.desc}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={!canAfford || !levelOk}
+                      onClick={() => {
+                        sound.playHammer();
+                        onBuyItem(b.id, b.name, b.cost, 'building');
+                      }}
+                      className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        canAfford && levelOk
+                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md active:scale-95'
+                          : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <span>Build for 🪙 {b.cost}</span>
                     </button>
                   </div>
                 );
@@ -240,44 +319,6 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {activeTab === 'house' && (
-            <div className="space-y-4">
-              <div className="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50">
-                <h3 className="text-xs font-bold text-slate-200 mb-1">Farmhouse Exterior Paint</h3>
-                <p className="text-[11px] text-slate-400 mb-3">
-                  Customize the facade of your central homestead to suit your personal aesthetic.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {houseColors.map((color) => {
-                    const isSelected = gameState.houseColor === color.hex;
-
-                    return (
-                      <button
-                        key={color.hex}
-                        onClick={() => {
-                          sound.playTap();
-                          onSetHouseColor(color.hex);
-                        }}
-                        className={`flex items-center gap-2.5 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-slate-700 border-amber-400 shadow-sm'
-                            : 'bg-slate-800/80 border-slate-700 hover:bg-slate-750'
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-lg border border-white/20 shadow-inner"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        <span className="text-xs font-semibold text-slate-200">{color.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           )}
         </div>

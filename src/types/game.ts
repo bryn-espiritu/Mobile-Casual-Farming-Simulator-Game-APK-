@@ -1,5 +1,12 @@
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 export type TimeOfDay = 'morning' | 'day' | 'sunset' | 'night';
+export type WeatherType =
+  | 'sunny'
+  | 'rain'
+  | 'thunderstorm'
+  | 'snow'
+  | 'petal_breeze'
+  | 'autumn_wind';
 
 export type CropType =
   | 'wheat'
@@ -8,7 +15,10 @@ export type CropType =
   | 'corn'
   | 'sunflower'
   | 'pumpkin'
-  | 'frostberry';
+  | 'frostberry'
+  | 'palay'
+  | 'ube'
+  | 'mango';
 
 export interface CropDefinition {
   type: CropType;
@@ -31,6 +41,7 @@ export type TileType =
   | 'wood_path'
   | 'flower_bed'
   | 'water_pond'
+  | 'fish_pond'
   | 'fence';
 
 export type StructureType =
@@ -39,14 +50,21 @@ export type StructureType =
   | 'well'
   | 'farmhouse'
   | 'beehive'
-  | 'coop';
+  | 'coop'
+  | 'cottage'
+  | 'greenhouse'
+  | 'gazebo'
+  | 'shed'
+  | 'bahay_kubo'
+  | 'fish_pond';
 
 export type AnimalType =
   | 'chicken'
   | 'cow'
   | 'sheep'
   | 'dog'
-  | 'cat';
+  | 'cat'
+  | 'carabao';
 
 export interface TileCrop {
   type: CropType;
@@ -60,7 +78,14 @@ export interface TileStructure {
   id: string;
   type: StructureType;
   colorTheme?: string;
+  level?: number;
   lastCollected?: number;
+  fishStock?: {
+    tilapia: number;
+    milkfish: number;
+    lastFed?: number;
+    readyToHarvest?: boolean;
+  };
 }
 
 export interface TileAnimal {
@@ -74,6 +99,7 @@ export interface TileAnimal {
   offsetY: number;
   wanderTargetX: number;
   wanderTargetY: number;
+  isPlowing?: boolean;
 }
 
 export interface TileDecor {
@@ -94,6 +120,7 @@ export interface FarmTile {
 export type ToolMode =
   | 'inspect'
   | 'plow'
+  | 'carabao_plow'
   | 'plant'
   | 'water'
   | 'harvest'
@@ -133,13 +160,45 @@ export interface TownOrder {
   completed: boolean;
 }
 
-export interface InventoryItem {
+export interface FurnitureItem {
   id: string;
   name: string;
-  category: 'crop' | 'animal' | 'seed' | 'structure' | 'decor';
-  count: number;
-  sellPrice: number;
+  category: 'hearth' | 'seating' | 'tables' | 'bedroom' | 'plants' | 'rugs';
+  cost: number;
   icon: string;
+  description: string;
+  comfortBonus: number;
+}
+
+export interface PlacedFurniture {
+  id: string;
+  furnitureId: string;
+  name: string;
+  category: string;
+  icon: string;
+  x: number; // 0 to 5 room grid
+  y: number; // 0 to 5 room grid
+  color?: string;
+}
+
+export interface HouseCustomization {
+  level: number; // 1: Cozy Cabin, 2: Country Manor, 3: Grand Estate
+  exteriorColor: string;
+  roofColor: string;
+  wallStyle: string;
+  flooring: string;
+  placedFurniture: PlacedFurniture[];
+}
+
+export interface AutomationState {
+  autoHarvestEnabled: boolean;
+  autoHarvestLevel: number; // 0: locked, 1: Basic (every 4s), 2: Fast (every 2s), 3: Instant (every 1s)
+  autoPlantEnabled: boolean;
+  autoPlantLevel: number;
+  autoFeedEnabled: boolean;
+  autoFeedLevel: number;
+  autoWaterEnabled: boolean;
+  autoWaterLevel: number;
 }
 
 export interface GameState {
@@ -155,6 +214,7 @@ export interface GameState {
   seasonDay: number;
   totalDays: number;
   timeOfDay: TimeOfDay;
+  weather: WeatherType;
   gridSize: number;
   tiles: FarmTile[];
   inventory: Record<string, number>;
@@ -168,4 +228,6 @@ export interface GameState {
   totalCropsHarvested: number;
   totalAnimalsPetted: number;
   totalCoinsEarned: number;
+  house: HouseCustomization;
+  automation: AutomationState;
 }

@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, ToolMode, CropType, FarmTile, SeasonalTask, TownOrder, Season, TimeOfDay } from './types/game';
-import { CROPS, getInitialOrders, getInitialTasks, GRID_SIZE } from './constants/gameData';
+import { GameState, ToolMode, CropType, FarmTile, SeasonalTask, TownOrder, Season, TimeOfDay, WeatherType, AutomationState } from './types/game';
+import { CROPS, getInitialOrders, getInitialTasks, GRID_SIZE, AUTOMATION_TIERS } from './constants/gameData';
 import { loadSavedGameState, saveGameState, getDefaultGameState, clearSavedGameState } from './services/storage';
 import { sound } from './services/audio';
 import { TitleScreen } from './components/game/TitleScreen';
@@ -18,6 +18,8 @@ import { SeasonalTasksModal } from './components/game/SeasonalTasksModal';
 import { InventoryModal } from './components/game/InventoryModal';
 import { SettingsModal } from './components/game/SettingsModal';
 import { PWAInstallModal } from './components/game/PWAInstallModal';
+import { HouseCustomizerModal } from './components/game/HouseCustomizerModal';
+import { AutomationModal } from './components/game/AutomationModal';
 
 export default function App() {
   const [screen, setScreen] = useState<'TITLE' | 'PLAYING'>('TITLE');
@@ -30,6 +32,8 @@ export default function App() {
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isHouseCustomizerOpen, setIsHouseCustomizerOpen] = useState(false);
+  const [isAutomationOpen, setIsAutomationOpen] = useState(false);
 
   // Relocating / Moving item state
   const [movingTile, setMovingTile] = useState<FarmTile | null>(null);
@@ -57,73 +61,6 @@ export default function App() {
     return () => clearInterval(timer);
   }, [gameState]);
 
-  // Simulation Tick (Crop Growth, Animal wanders, Produce readiness)
-  useEffect(() => {
-    if (screen !== 'PLAYING') return;
-
-    const interval = setInterval(() => {
-      setGameState((prev) => {
-        let changed = false;
-        const now = Date.now();
-
-        const newTiles = prev.tiles.map((tile) => {
-          // 1. Crop Growth Tick
-          if (tile.crop && !tile.crop.isReady) {
-            const cropDef = CROPS[tile.crop.type];
-            if (cropDef) {
-              const elapsedSec = (now - tile.crop.plantedAt) / 1000;
-              // Watered crops grow 1.8x faster
-              const speedMultiplier = tile.crop.watered ? 1.8 : 1.0;
-              const progress = Math.min(1.0, (elapsedSec * speedMultiplier) / cropDef.growthTimeSec);
-
-              if (progress !== tile.crop.growthProgress) {
-                changed = true;
-                return {
-                  ...tile,
-                  crop: {
-                    ...tile.crop,
-                    growthProgress: progress,
-                    isReady: progress >= 1.0,
-                  },
-                };
-              }
-            }
-          }
-
-          // 2. Animal Subtle Wander & Produce Tick
-          if (tile.animal) {
-            // Animals wander slightly within +/- 5px
-            const wanderX = Math.sin(now / 1500 + tile.x) * 4;
-            const wanderY = Math.cos(now / 1800 + tile.y) * 3;
-
-            // Generate produce every ~45 seconds if not ready
-            const shouldProduce = !tile.animal.produceReady && now - tile.animal.lastPet > 45000;
-
-            if (tile.animal.offsetX !== wanderX || tile.animal.offsetY !== wanderY || shouldProduce) {
-              changed = true;
-              return {
-                ...tile,
-                animal: {
-                  ...tile.animal,
-                  offsetX: wanderX,
-                  offsetY: wanderY,
-                  produceReady: tile.animal.produceReady || shouldProduce,
-                },
-              };
-            }
-          }
-
-          return tile;
-        });
-
-        if (!changed) return prev;
-        return { ...prev, tiles: newTiles };
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [screen]);
-
   // Helper to increment seasonal task progress
   const updateTaskProgress = useCallback((actionType: 'plant' | 'water' | 'harvest' | 'pet' | 'order', count: number = 1) => {
     setGameState((prev) => {
@@ -131,7 +68,7 @@ export default function App() {
         if (task.completed || task.claimed) return task;
 
         let shouldAdvance = false;
-        if (actionType === 'plant' && task.title.toLowerCase().includes('sow') || task.title.toLowerCase().includes('plant')) {
+        if (actionType === 'plant' && (task.title.toLowerCase().includes('sow') || task.title.toLowerCase().includes('plant'))) {
           shouldAdvance = true;
         } else if (actionType === 'water' && (task.title.toLowerCase().includes('dew') || task.title.toLowerCase().includes('water') || task.description.toLowerCase().includes('water'))) {
           shouldAdvance = true;
@@ -161,7 +98,9 @@ export default function App() {
   // Check and grant XP / Level Up
   const addXP = useCallback((amount: number) => {
     setGameState((prev) => {
-      let currentXP = prev.xp + amount;
+      // House level 3 bonus: +25% XP
+      const xpMultiplier = prev.house?.level >= 3 ? 1.25 : 1.0;
+      let currentXP = prev.xp + Math.round(amount * xpMultiplier);
       let currentLevel = prev.level;
       let needed = currentLevel * 100;
       let didLevelUp = false;
@@ -185,6 +124,250 @@ export default function App() {
     });
   }, []);
 
+  // Main 1-Second Simulation Tick
+  useEffect(() => {
+    if (screen !== 'PLAYING') return;
+
+    const interval = setInterval(() => {
+      setGameState((prev) => {
+        let changed = false;
+        const now = Date.now();
+        const isRaining = prev.weather === 'rain' || prev.weather === 'thunderstorm';
+
+        const newTiles = prev.tiles.map((tile) => {
+          // Weather Hydration: Rain/Storm automatically waters any soil with crops
+          let wateredState = tile.crop?.watered || false;
+          if (isRaining && tile.type === 'soil' && tile.crop && !tile.crop.watered) {
+            wateredState = true;
+            changed = true;
+          }
+
+          // 1. Crop Growth Tick
+          if (tile.crop && !tile.crop.isReady) {
+            const cropDef = CROPS[tile.crop.type];
+            if (cropDef) {
+              const elapsedSec = (now - tile.crop.plantedAt) / 1000;
+              const speedMultiplier = (wateredState || isRaining) ? 1.8 : 1.0;
+              const progress = Math.min(1.0, (elapsedSec * speedMultiplier) / cropDef.growthTimeSec);
+
+              if (progress !== tile.crop.growthProgress || wateredState !== tile.crop.watered) {
+                changed = true;
+                return {
+                  ...tile,
+                  crop: {
+                    ...tile.crop,
+                    watered: wateredState,
+                    growthProgress: progress,
+                    isReady: progress >= 1.0,
+                  },
+                };
+              }
+            }
+          }
+
+          // 2. Animal Subtle Wander & Produce Tick
+          if (tile.animal) {
+            const wanderX = Math.sin(now / 1500 + tile.x) * 4;
+            const wanderY = Math.cos(now / 1800 + tile.y) * 3;
+            const shouldProduce = !tile.animal.produceReady && now - tile.animal.lastPet > 40000;
+
+            if (tile.animal.offsetX !== wanderX || tile.animal.offsetY !== wanderY || shouldProduce) {
+              changed = true;
+              return {
+                ...tile,
+                animal: {
+                  ...tile.animal,
+                  offsetX: wanderX,
+                  offsetY: wanderY,
+                  produceReady: tile.animal.produceReady || shouldProduce,
+                },
+              };
+            }
+          }
+
+          return tile;
+        });
+
+        if (!changed) return prev;
+        return { ...prev, tiles: newTiles };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [screen]);
+
+  // AUTOMATION ENGINE INTERVAL (Auto-Harvest, Auto-Plant, Auto-Feed, Auto-Water)
+  useEffect(() => {
+    if (screen !== 'PLAYING') return;
+
+    let harvestTimer = 0;
+    let plantTimer = 0;
+    let feedTimer = 0;
+    let waterTimer = 0;
+
+    const autoInterval = setInterval(() => {
+      harvestTimer += 1;
+      plantTimer += 1;
+      feedTimer += 1;
+      waterTimer += 1;
+
+      setGameState((prev) => {
+        let updated = false;
+        let newTiles = [...prev.tiles];
+        let newInventory = { ...prev.inventory };
+        let newCoins = prev.coins;
+        let earnedHarvests = 0;
+        let pettedCount = 0;
+
+        const auto = prev.automation;
+
+        // 1. AUTO-HARVEST
+        if (auto?.autoHarvestEnabled && auto.autoHarvestLevel > 0) {
+          const tier = AUTOMATION_TIERS.autoHarvest.find((t) => t.level === auto.autoHarvestLevel);
+          const intervalNeeded = tier ? tier.intervalSec : 5;
+
+          if (harvestTimer >= intervalNeeded) {
+            harvestTimer = 0;
+            // Harvest first 2 ready crops
+            let harvestedThisCycle = 0;
+            newTiles = newTiles.map((t) => {
+              if (harvestedThisCycle < 3 && t.crop && t.crop.isReady) {
+                harvestedThisCycle++;
+                earnedHarvests++;
+                const cropDef = CROPS[t.crop.type];
+                // House Level 2 perk: +15% crop sell value
+                const bonus = prev.house?.level >= 2 ? 1.15 : 1.0;
+                const value = Math.round(cropDef.sellPrice * bonus);
+                newCoins += value;
+                newInventory[t.crop.type] = (newInventory[t.crop.type] ?? 0) + 1;
+                updated = true;
+                return { ...t, crop: undefined };
+              }
+              return t;
+            });
+            if (harvestedThisCycle > 0) {
+              sound.playHarvest();
+            }
+          }
+        }
+
+        // 2. AUTO-PLANT
+        if (auto?.autoPlantEnabled && auto.autoPlantLevel > 0) {
+          const tier = AUTOMATION_TIERS.autoPlant.find((t) => t.level === auto.autoPlantLevel);
+          const intervalNeeded = tier ? tier.intervalSec : 5;
+
+          if (plantTimer >= intervalNeeded) {
+            plantTimer = 0;
+            const seedKey = `seed_${prev.selectedSeed}`;
+            let availableSeeds = newInventory[seedKey] ?? 0;
+
+            if (availableSeeds > 0) {
+              let plantedThisCycle = 0;
+              newTiles = newTiles.map((t) => {
+                if (plantedThisCycle < 2 && availableSeeds > 0 && t.type === 'soil' && !t.crop) {
+                  plantedThisCycle++;
+                  availableSeeds--;
+                  newInventory[seedKey] = availableSeeds;
+                  updated = true;
+                  return {
+                    ...t,
+                    crop: {
+                      type: prev.selectedSeed,
+                      plantedAt: Date.now(),
+                      watered: false,
+                      growthProgress: 0,
+                      isReady: false,
+                    },
+                  };
+                }
+                return t;
+              });
+              if (plantedThisCycle > 0) {
+                sound.playPlant();
+              }
+            }
+          }
+        }
+
+        // 3. AUTO-FEED
+        if (auto?.autoFeedEnabled && auto.autoFeedLevel > 0) {
+          const tier = AUTOMATION_TIERS.autoFeed.find((t) => t.level === auto.autoFeedLevel);
+          const intervalNeeded = tier ? tier.intervalSec : 25;
+
+          if (feedTimer >= intervalNeeded) {
+            feedTimer = 0;
+            newTiles = newTiles.map((t) => {
+              if (t.animal) {
+                pettedCount++;
+                const prod = t.animal.type === 'cow' ? 'milk' : t.animal.type === 'chicken' ? 'egg' : t.animal.type === 'sheep' ? 'wool' : '';
+                if (prod) {
+                  newInventory[prod] = (newInventory[prod] ?? 0) + 1;
+                }
+                newCoins += 25;
+                updated = true;
+                return {
+                  ...t,
+                  animal: {
+                    ...t.animal,
+                    petCount: t.animal.petCount + 1,
+                    lastPet: Date.now(),
+                    produceReady: false,
+                  },
+                };
+              }
+              return t;
+            });
+            if (pettedCount > 0) {
+              sound.playAnimalPet('cow');
+            }
+          }
+        }
+
+        // 4. AUTO-WATER SPRINKLERS
+        if (auto?.autoWaterEnabled && auto.autoWaterLevel > 0) {
+          const tier = AUTOMATION_TIERS.autoWater.find((t) => t.level === auto.autoWaterLevel);
+          const intervalNeeded = tier ? tier.intervalSec : 6;
+
+          if (waterTimer >= intervalNeeded) {
+            waterTimer = 0;
+            let wateredCount = 0;
+            newTiles = newTiles.map((t) => {
+              if (t.type === 'soil' && t.crop && !t.crop.watered) {
+                wateredCount++;
+                updated = true;
+                return {
+                  ...t,
+                  crop: { ...t.crop, watered: true },
+                };
+              }
+              return t;
+            });
+            if (wateredCount > 0) {
+              sound.playWater();
+            }
+          }
+        }
+
+        if (!updated) return prev;
+
+        if (earnedHarvests > 0) updateTaskProgress('harvest', earnedHarvests);
+        if (pettedCount > 0) updateTaskProgress('pet', pettedCount);
+
+        return {
+          ...prev,
+          coins: newCoins,
+          totalCoinsEarned: prev.totalCoinsEarned + (newCoins - prev.coins),
+          totalCropsHarvested: prev.totalCropsHarvested + earnedHarvests,
+          totalAnimalsPetted: prev.totalAnimalsPetted + pettedCount,
+          inventory: newInventory,
+          tiles: newTiles,
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(autoInterval);
+  }, [screen, updateTaskProgress]);
+
   // Tool Action on Tile
   const handleTileAction = useCallback((tile: FarmTile, tool: ToolMode) => {
     const { x, y } = tile;
@@ -196,6 +379,23 @@ export default function App() {
           tiles: prev.tiles.map((t) => (t.x === x && t.y === y ? { ...t, type: 'soil' } : t)),
         }));
       }
+    } else if (tool === 'carabao_plow') {
+      // Carabao Plow furrow: plows 3 tiles along the X axis
+      const targetCoords = [
+        { x, y },
+        { x: x + 1, y },
+        { x: x - 1, y },
+      ];
+      setGameState((prev) => ({
+        ...prev,
+        tiles: prev.tiles.map((t) => {
+          const isTarget = targetCoords.some((c) => c.x === t.x && c.y === t.y);
+          if (isTarget && t.type === 'grass' && !t.structure && !t.animal) {
+            return { ...t, type: 'soil' };
+          }
+          return t;
+        }),
+      }));
     } else if (tool === 'plant') {
       if (tile.type === 'soil' && !tile.crop) {
         const seedKey = `seed_${gameState.selectedSeed}`;
@@ -225,7 +425,6 @@ export default function App() {
           }));
           updateTaskProgress('plant', 1);
         } else {
-          // Open shop to buy seeds
           setIsShopOpen(true);
         }
       }
@@ -246,10 +445,13 @@ export default function App() {
 
         setGameState((prev) => {
           const currentCount = prev.inventory[cropType] ?? 0;
+          const bonus = prev.house?.level >= 2 ? 1.15 : 1.0;
+          const revenue = Math.round(cropDef.sellPrice * bonus);
+
           return {
             ...prev,
-            coins: prev.coins + cropDef.sellPrice,
-            totalCoinsEarned: prev.totalCoinsEarned + cropDef.sellPrice,
+            coins: prev.coins + revenue,
+            totalCoinsEarned: prev.totalCoinsEarned + revenue,
             totalCropsHarvested: prev.totalCropsHarvested + 1,
             inventory: {
               ...prev.inventory,
@@ -263,10 +465,8 @@ export default function App() {
         updateTaskProgress('harvest', 1);
       }
     } else if (tool === 'move') {
-      // Pick up tile for relocating
       setMovingTile(tile);
     } else if (tool === 'shovel') {
-      // Clear soil or path back to grass
       if (tile.type !== 'grass' && !tile.structure && !tile.animal) {
         setGameState((prev) => ({
           ...prev,
@@ -287,9 +487,9 @@ export default function App() {
         if (t.animal && t.animal.id === animalId) {
           const produceReady = t.animal.produceReady;
           if (produceReady) {
-            collectedProduce = t.animal.type === 'cow' ? 'milk' : t.animal.type === 'chicken' ? 'egg' : t.animal.type === 'sheep' ? 'wool' : 'love';
-            rewardCoins = 35;
-            rewardXP = 25;
+            collectedProduce = (t.animal.type === 'cow' || t.animal.type === 'carabao') ? 'milk' : t.animal.type === 'chicken' ? 'egg' : t.animal.type === 'sheep' ? 'wool' : 'love';
+            rewardCoins = t.animal.type === 'carabao' ? 45 : 35;
+            rewardXP = t.animal.type === 'carabao' ? 30 : 25;
           }
           return {
             ...t,
@@ -325,12 +525,28 @@ export default function App() {
 
   // Structure interaction
   const handleStructureClick = useCallback((structureType: string, tile: FarmTile) => {
-    if (structureType === 'farmhouse') {
-      setIsShopOpen(true);
-    } else if (structureType === 'barn' || structureType === 'coop') {
+    if (structureType === 'farmhouse' || structureType === 'cottage' || structureType === 'bahay_kubo') {
+      setIsHouseCustomizerOpen(true);
+    } else if (structureType === 'fish_pond') {
+      // Aquaculture catch from Palaisdaan (Tilapia & Milkfish)
+      sound.playFishCatch();
+      const isTilapia = Math.random() > 0.45;
+      const fishItem = isTilapia ? 'tilapia' : 'milkfish';
+      const fishCoinVal = isTilapia ? 55 : 85;
+
+      setGameState((prev) => ({
+        ...prev,
+        coins: prev.coins + fishCoinVal,
+        totalCoinsEarned: prev.totalCoinsEarned + fishCoinVal,
+        inventory: {
+          ...prev.inventory,
+          [fishItem]: (prev.inventory[fishItem] ?? 0) + 1,
+        },
+      }));
+      addXP(25);
+    } else if (structureType === 'barn' || structureType === 'coop' || structureType === 'shed') {
       setIsInventoryOpen(true);
     } else if (structureType === 'well') {
-      // Hydrate all adjacent crops!
       sound.playWater();
       setGameState((prev) => {
         const adjacent = prev.tiles.map((t) => {
@@ -343,7 +559,6 @@ export default function App() {
       });
       updateTaskProgress('water', 3);
     } else if (structureType === 'windmill') {
-      // Grind wheat bonus
       sound.playHarvest();
       setGameState((prev) => {
         const wheatCount = prev.inventory['wheat'] ?? 0;
@@ -362,6 +577,8 @@ export default function App() {
         ...prev,
         coins: prev.coins + 40,
       }));
+    } else if (structureType === 'greenhouse') {
+      setIsShopOpen(true);
     }
   }, [updateTaskProgress]);
 
@@ -426,7 +643,6 @@ export default function App() {
     addXP(order.rewardXP);
     updateTaskProgress('order', 1);
 
-    // Replenish new order after 4 seconds
     setTimeout(() => {
       setGameState((prev) => {
         const activeCount = prev.orders.filter((o) => !o.completed).length;
@@ -461,9 +677,17 @@ export default function App() {
     setGameState((prev) => {
       const currentIndex = seasonsOrder.indexOf(prev.season);
       const nextSeason = seasonsOrder[(currentIndex + 1) % seasonsOrder.length];
+      const weatherMap: Record<Season, WeatherType> = {
+        spring: 'petal_breeze',
+        summer: 'sunny',
+        autumn: 'autumn_wind',
+        winter: 'snow',
+      };
+
       return {
         ...prev,
         season: nextSeason,
+        weather: weatherMap[nextSeason] || 'sunny',
         seasonDay: 1,
         totalDays: prev.totalDays + 1,
         tasks: getInitialTasks(nextSeason),
@@ -476,7 +700,6 @@ export default function App() {
     setGameState((prev) => {
       const nextDay = prev.seasonDay + 1;
       if (nextDay > 7) {
-        // Roll into next season
         const seasonsOrder: Season[] = ['spring', 'summer', 'autumn', 'winter'];
         const currentIndex = seasonsOrder.indexOf(prev.season);
         const nextSeason = seasonsOrder[(currentIndex + 1) % seasonsOrder.length];
@@ -494,6 +717,22 @@ export default function App() {
         seasonDay: nextDay,
         totalDays: prev.totalDays + 1,
       };
+    });
+  }, []);
+
+  // Cycle Weather (Sunny -> Rain -> Thunderstorm -> Snow -> Petal Breeze -> Autumn Wind)
+  const handleCycleWeather = useCallback(() => {
+    const weathers: WeatherType[] = ['sunny', 'rain', 'thunderstorm', 'snow', 'petal_breeze', 'autumn_wind'];
+    setGameState((prev) => {
+      const current = prev.weather || 'sunny';
+      const nextIdx = (weathers.indexOf(current) + 1) % weathers.length;
+      const nextWeather = weathers[nextIdx];
+      if (nextWeather === 'thunderstorm') {
+        sound.playThunder();
+      } else if (nextWeather === 'rain') {
+        sound.playWater();
+      }
+      return { ...prev, weather: nextWeather };
     });
   }, []);
 
@@ -522,12 +761,11 @@ export default function App() {
     });
   }, []);
 
-  // Buying Items / Livestock / Decor
+  // Buying Items / Livestock / Decor / Buildings
   const handleBuyItem = useCallback((itemId: string, itemName: string, cost: number, category: string) => {
     setGameState((prev) => {
       if (prev.coins < cost) return prev;
 
-      // Find first empty grass tile to place animal or decor
       let placed = false;
       const newTiles = prev.tiles.map((tile) => {
         if (!placed && tile.type === 'grass' && !tile.crop && !tile.structure && !tile.animal && !tile.decor) {
@@ -547,6 +785,21 @@ export default function App() {
                 offsetY: 0,
                 wanderTargetX: 0,
                 wanderTargetY: 0,
+              },
+            };
+          } else if (category === 'building') {
+            const stType = itemId.replace('building_', '') as any;
+            if (stType === 'fish_pond') {
+              return {
+                ...tile,
+                type: 'fish_pond',
+              };
+            }
+            return {
+              ...tile,
+              structure: {
+                id: `${stType}_${Date.now()}`,
+                type: stType,
               },
             };
           } else if (category === 'decor') {
@@ -582,6 +835,118 @@ export default function App() {
         inventory: {
           ...prev.inventory,
           [itemKey]: owned - count,
+        },
+      };
+    });
+  }, []);
+
+  // House Architecture Upgrade
+  const handleUpgradeHouseLevel = useCallback((nextLevel: number, coinCost: number, gemCost: number) => {
+    setGameState((prev) => {
+      if (prev.coins < coinCost || prev.gems < gemCost) return prev;
+      return {
+        ...prev,
+        coins: prev.coins - coinCost,
+        gems: prev.gems - gemCost,
+        house: {
+          ...prev.house,
+          level: nextLevel,
+        },
+      };
+    });
+  }, []);
+
+  // House Exterior Paint
+  const handleUpdateHouseColors = useCallback((exteriorColor: string, roofColor: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      houseColor: exteriorColor,
+      house: {
+        ...prev.house,
+        exteriorColor,
+        roofColor,
+      },
+    }));
+  }, []);
+
+  // Furniture Placement
+  const handlePlaceFurniture = useCallback((
+    furnitureId: string,
+    name: string,
+    category: string,
+    icon: string,
+    x: number,
+    y: number,
+    cost: number
+  ) => {
+    setGameState((prev) => {
+      if (prev.coins < cost) return prev;
+      const newPlaced = [
+        ...prev.house.placedFurniture.filter((f) => !(f.x === x && f.y === y)),
+        {
+          id: `placed_${Date.now()}`,
+          furnitureId,
+          name,
+          category,
+          icon,
+          x,
+          y,
+        },
+      ];
+
+      return {
+        ...prev,
+        coins: prev.coins - cost,
+        house: {
+          ...prev.house,
+          placedFurniture: newPlaced,
+        },
+      };
+    });
+  }, []);
+
+  // Furniture Removal
+  const handleRemoveFurniture = useCallback((placedId: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      house: {
+        ...prev.house,
+        placedFurniture: prev.house.placedFurniture.filter((f) => f.id !== placedId),
+      },
+    }));
+  }, []);
+
+  // Automation Toggle
+  const handleToggleAutomation = useCallback((key: keyof AutomationState) => {
+    setGameState((prev) => ({
+      ...prev,
+      automation: {
+        ...prev.automation,
+        [key]: !prev.automation[key],
+      },
+    }));
+  }, []);
+
+  // Automation Upgrade
+  const handleUpgradeAutomation = useCallback((
+    type: 'autoHarvest' | 'autoPlant' | 'autoFeed' | 'autoWater',
+    targetLevel: number,
+    costCoins: number,
+    costGems: number
+  ) => {
+    setGameState((prev) => {
+      if (prev.coins < costCoins || prev.gems < costGems) return prev;
+      const levelKey = `${type}Level` as keyof AutomationState;
+      const enabledKey = `${type}Enabled` as keyof AutomationState;
+
+      return {
+        ...prev,
+        coins: prev.coins - costCoins,
+        gems: prev.gems - costGems,
+        automation: {
+          ...prev.automation,
+          [levelKey]: targetLevel,
+          [enabledKey]: true,
         },
       };
     });
@@ -628,8 +993,11 @@ export default function App() {
           onOpenTasks={() => setIsTasksOpen(true)}
           onOpenInventory={() => setIsInventoryOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenHouseCustomizer={() => setIsHouseCustomizerOpen(true)}
+          onOpenAutomation={() => setIsAutomationOpen(true)}
           onAdvanceDay={handleAdvanceDay}
           onToggleTimeOfDay={handleToggleTimeOfDay}
+          onCycleWeather={handleCycleWeather}
         />
 
         {/* Bottom Thumb Toolbar */}
@@ -647,10 +1015,8 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#0c140f] flex items-center justify-center">
-      {/* If Mobile Frame Mode is enabled on desktop viewports, render realistic smartphone bezel */}
       {gameState.mobileFrameMode ? (
         <div className="relative w-full max-w-[430px] h-full max-h-[890px] rounded-[44px] overflow-hidden shadow-2xl border-[8px] border-slate-900 bg-black flex flex-col">
-          {/* Smartphone Speaker & Camera Notch */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 w-32 h-6 bg-slate-900 rounded-b-2xl flex items-center justify-center">
             <div className="w-10 h-1 bg-slate-800 rounded-full" />
             <div className="w-2.5 h-2.5 bg-slate-950 rounded-full ml-3 border border-slate-800" />
@@ -660,7 +1026,6 @@ export default function App() {
             {renderGameContent()}
           </div>
 
-          {/* Home indicator bar */}
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-40 w-32 h-1 bg-white/40 rounded-full pointer-events-none" />
         </div>
       ) : (
@@ -676,7 +1041,8 @@ export default function App() {
           onClose={() => setIsShopOpen(false)}
           onBuySeed={handleBuySeed}
           onBuyItem={handleBuyItem}
-          onSetHouseColor={(color) => setGameState((prev) => ({ ...prev, houseColor: color }))}
+          onOpenHouseCustomizer={() => setIsHouseCustomizerOpen(true)}
+          onOpenAutomation={() => setIsAutomationOpen(true)}
         />
       )}
 
@@ -702,6 +1068,26 @@ export default function App() {
           gameState={gameState}
           onClose={() => setIsInventoryOpen(false)}
           onSellItem={handleSellItem}
+        />
+      )}
+
+      {isHouseCustomizerOpen && (
+        <HouseCustomizerModal
+          gameState={gameState}
+          onClose={() => setIsHouseCustomizerOpen(false)}
+          onUpgradeHouseLevel={handleUpgradeHouseLevel}
+          onUpdateColors={handleUpdateHouseColors}
+          onPlaceFurniture={handlePlaceFurniture}
+          onRemoveFurniture={handleRemoveFurniture}
+        />
+      )}
+
+      {isAutomationOpen && (
+        <AutomationModal
+          gameState={gameState}
+          onClose={() => setIsAutomationOpen(false)}
+          onToggleAutomation={handleToggleAutomation}
+          onUpgradeAutomation={handleUpgradeAutomation}
         />
       )}
 

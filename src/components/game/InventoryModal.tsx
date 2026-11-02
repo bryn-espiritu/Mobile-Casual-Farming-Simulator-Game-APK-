@@ -22,6 +22,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     sunflower: { name: 'Sunburst Sunflower', icon: '🌻', price: 96, category: 'Crops' },
     pumpkin: { name: 'Spiced Pumpkin', icon: '🎃', price: 130, category: 'Crops' },
     frostberry: { name: 'Glacier Frostberry', icon: '🫐', price: 125, category: 'Crops' },
+    palay: { name: 'Golden Palay (Rice)', icon: '🌾', price: 65, category: 'Crops' },
+    ube: { name: 'Ube Yam (Purple Yam)', icon: '🍠', price: 95, category: 'Crops' },
+    mango: { name: 'Carabao Mango', icon: '🥭', price: 140, category: 'Crops' },
+    tilapia: { name: 'Fresh Tilapia', icon: '🐟', price: 55, category: 'Aquaculture' },
+    milkfish: { name: 'Bangus (Milkfish)', icon: '🐟', price: 85, category: 'Aquaculture' },
     egg: { name: 'Fresh Farm Egg', icon: '🥚', price: 25, category: 'Produce' },
     milk: { name: 'Creamy Milk', icon: '🥛', price: 60, category: 'Produce' },
     wool: { name: 'Merino Wool', icon: '🧶', price: 75, category: 'Produce' },
@@ -32,6 +37,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     seed_sunflower: { name: 'Sunflower Seeds', icon: '🌱', price: 18, category: 'Seeds' },
     seed_pumpkin: { name: 'Pumpkin Seeds', icon: '🌱', price: 22, category: 'Seeds' },
     seed_frostberry: { name: 'Frostberry Seeds', icon: '🌱', price: 20, category: 'Seeds' },
+    seed_palay: { name: 'Palay Rice Seeds', icon: '🌱', price: 10, category: 'Seeds' },
+    seed_ube: { name: 'Ube Seedlings', icon: '🌱', price: 16, category: 'Seeds' },
+    seed_mango: { name: 'Carabao Mango Sapling', icon: '🌱', price: 24, category: 'Seeds' },
   };
 
   const storedEntries = Object.entries(gameState.inventory).filter(([_, count]) => count > 0);
