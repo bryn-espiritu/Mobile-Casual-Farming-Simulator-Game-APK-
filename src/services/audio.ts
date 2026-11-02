@@ -238,6 +238,20 @@ class SoundService {
         osc.frequency.exponentialRampToValueAtTime(75, now + 0.35);
         gain.gain.setValueAtTime(0.18, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      } else if (animalType === 'ostrich') {
+        // Ostrich deep hollow boom / trill
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.28);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      } else if (animalType === 'rabbit') {
+        // Cute bunny hop squeak
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.1);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
       } else {
         // Dog/Cat purr/chirp
         osc.type = 'sine';
@@ -435,6 +449,180 @@ class SoundService {
         gain.connect(this.ctx.destination);
         osc.start(t);
         osc.stop(t + 0.35);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // Cooking sizzling pan effect
+  public playSizzle() {
+    if (this.sfxMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const bufferSize = this.ctx.sampleRate * 0.3;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = this.ctx.createBufferSource();
+      whiteNoise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(2400, this.ctx.currentTime);
+      filter.Q.setValueAtTime(3, this.ctx.currentTime);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+
+      whiteNoise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      whiteNoise.start();
+    } catch {
+      // ignore
+    }
+  }
+
+  // Kitchen chopping board tap
+  public playChop() {
+    if (this.sfxMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Dish served fanfare
+  public playCookSuccess() {
+    if (this.sfxMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const t = now + idx * 0.08;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.45);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // Rare, Epic, and Legendary Harvest chime
+  public playRareHarvest(rarity: 'rare' | 'epic' | 'legendary') {
+    if (this.sfxMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const chord =
+        rarity === 'legendary'
+          ? [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98] // C5 to G6 glittering major
+          : rarity === 'epic'
+            ? [440, 554.37, 659.25, 880, 1108.73] // A Major
+            : [392, 493.88, 587.33, 783.99]; // G Major
+
+      chord.forEach((freq, i) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const t = now + i * 0.06;
+
+        osc.type = rarity === 'legendary' ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(rarity === 'legendary' ? 0.22 : 0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + (rarity === 'legendary' ? 0.6 : 0.4));
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + (rarity === 'legendary' ? 0.6 : 0.4));
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // Land Expansion celebration
+  public playExpandLand() {
+    if (this.sfxMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      // Low resonant rumble
+      const oscLow = this.ctx.createOscillator();
+      const gainLow = this.ctx.createGain();
+      oscLow.type = 'sine';
+      oscLow.frequency.setValueAtTime(65, now);
+      oscLow.frequency.exponentialRampToValueAtTime(45, now + 0.6);
+      gainLow.gain.setValueAtTime(0.3, now);
+      gainLow.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      oscLow.connect(gainLow);
+      gainLow.connect(this.ctx.destination);
+      oscLow.start(now);
+      oscLow.stop(now + 0.6);
+
+      // Triumphant ascending chords
+      const fanfare = [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5];
+      fanfare.forEach((f, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const t = now + 0.2 + idx * 0.08;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, t);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.5);
       });
     } catch {
       // ignore

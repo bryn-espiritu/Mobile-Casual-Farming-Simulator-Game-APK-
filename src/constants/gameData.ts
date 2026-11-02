@@ -1,6 +1,6 @@
-import { CropDefinition, CropType, FarmTile, SeasonalTask, TownOrder, Season } from '../types/game';
+import { CropDefinition, CropType, FarmTile, SeasonalTask, TownOrder, Season, CookingRecipe, ItemRarity } from '../types/game';
 
-export const GRID_SIZE = 12; // 12x12 isometric grid
+export const GRID_SIZE = 12; // 12x12 initial isometric grid
 
 export const CROPS: Record<CropType, CropDefinition> = {
   wheat: {
@@ -11,126 +11,136 @@ export const CROPS: Record<CropType, CropDefinition> = {
     sellPrice: 15,
     xpYield: 8,
     seasonPreference: 'all',
+    allowedSeasons: ['spring', 'summer', 'autumn', 'winter'],
     color: '#eab308',
     secondaryColor: '#ca8a04',
-    description: 'Fast-growing wholesome grain. Essential for baking rustic bread.',
+    description: 'Wholesome universal grain that grows across all four seasons. Essential for baking rustic breads.',
     emoji: '🌾',
   },
   strawberry: {
     type: 'strawberry',
     name: 'Sweet Strawberry',
-    growthTimeSec: 22,
+    growthTimeSec: 20,
     seedCost: 14,
     sellPrice: 38,
     xpYield: 18,
     seasonPreference: 'spring',
+    allowedSeasons: ['spring'],
     color: '#f43f5e',
     secondaryColor: '#be123c',
-    description: 'Juicy ruby berries that thrive in the gentle springtime breeze.',
+    description: 'Juicy ruby berries that strictly require gentle Spring sunshine and spring showers.',
     emoji: '🍓',
   },
   carrot: {
     type: 'carrot',
     name: 'Crisp Carrot',
-    growthTimeSec: 28,
+    growthTimeSec: 25,
     seedCost: 18,
     sellPrice: 48,
     xpYield: 24,
     seasonPreference: 'spring',
+    allowedSeasons: ['spring', 'autumn'],
     color: '#f97316',
     secondaryColor: '#c2410c',
-    description: 'Tender root vegetable, beloved by local farm animals.',
+    description: 'Tender root vegetable thriving in crisp Spring and mild Autumn conditions.',
     emoji: '🥕',
   },
   corn: {
     type: 'corn',
     name: 'Sun Sweet Corn',
-    growthTimeSec: 36,
+    growthTimeSec: 32,
     seedCost: 26,
     sellPrice: 72,
     xpYield: 34,
     seasonPreference: 'summer',
+    allowedSeasons: ['summer'],
     color: '#facc15',
     secondaryColor: '#a16207',
-    description: 'Tall golden stalks laden with plump sweet summer kernels.',
+    description: 'Tall golden stalks demanding intense Summer warmth to produce plump kernels.',
     emoji: '🌽',
   },
   sunflower: {
     type: 'sunflower',
     name: 'Sunburst Sunflower',
-    growthTimeSec: 45,
+    growthTimeSec: 40,
     seedCost: 35,
     sellPrice: 96,
     xpYield: 45,
     seasonPreference: 'summer',
+    allowedSeasons: ['summer'],
     color: '#eab308',
     secondaryColor: '#78350f',
-    description: 'Towering blossom that turns to face the sun. Yields seeds and honey boost.',
+    description: 'Summer specialty flower that basks in the heat and attracts wild honeybees.',
     emoji: '🌻',
   },
   pumpkin: {
     type: 'pumpkin',
     name: 'Spiced Pumpkin',
-    growthTimeSec: 55,
+    growthTimeSec: 45,
     seedCost: 45,
     sellPrice: 130,
     xpYield: 60,
     seasonPreference: 'autumn',
+    allowedSeasons: ['autumn'],
     color: '#ea580c',
     secondaryColor: '#9a3412',
-    description: 'Prized autumn gourds for festive pies and village decor.',
+    description: 'Prized Autumn gourds harvested during crisp October breezes for festival pies.',
     emoji: '🎃',
   },
   frostberry: {
     type: 'frostberry',
     name: 'Glacier Frostberry',
-    growthTimeSec: 50,
+    growthTimeSec: 42,
     seedCost: 42,
     sellPrice: 125,
     xpYield: 55,
     seasonPreference: 'winter',
+    allowedSeasons: ['winter'],
     color: '#38bdf8',
     secondaryColor: '#0284c7',
-    description: 'Hardy magical berry that glistens softly even beneath blankets of snow.',
+    description: 'Exclusive magical Winter berry that can only germinate amidst freezing snow.',
     emoji: '🫐',
   },
   palay: {
     type: 'palay',
     name: 'Golden Palay (Rice)',
-    growthTimeSec: 20,
+    growthTimeSec: 18,
     seedCost: 10,
     sellPrice: 32,
     xpYield: 16,
     seasonPreference: 'all',
+    allowedSeasons: ['spring', 'summer', 'autumn'],
     color: '#facc15',
     secondaryColor: '#854d0e',
-    description: 'Hearty rice stalks grown in lush flooded terraces. A staple of every Filipino meal.',
+    description: 'Hearty Philippine lowland rice cultivated across Spring, Summer, and Autumn terraces.',
     emoji: '🌾',
   },
   ube: {
     type: 'ube',
     name: 'Bohol Purple Yam (Ube)',
-    growthTimeSec: 32,
+    growthTimeSec: 30,
     seedCost: 22,
     sellPrice: 65,
     xpYield: 28,
     seasonPreference: 'summer',
+    allowedSeasons: ['summer', 'autumn'],
     color: '#9333ea',
     secondaryColor: '#581c87',
-    description: 'Rich royal purple tubers prized for halaya jams, kakanin, and festive halo-halo.',
+    description: 'Royal purple tuber prized for halaya jams; thrives through tropical Summer & Autumn.',
     emoji: '🍠',
   },
   mango: {
     type: 'mango',
     name: 'Guimaras Carabao Mango',
-    growthTimeSec: 42,
+    growthTimeSec: 38,
     seedCost: 30,
     sellPrice: 88,
     xpYield: 40,
     seasonPreference: 'summer',
+    allowedSeasons: ['spring', 'summer'],
     color: '#f59e0b',
     secondaryColor: '#b45309',
-    description: 'World-famous sweet golden carabao mango with melt-in-your-mouth honey nectar.',
+    description: 'World-renowned sweet Philippine mango blossoming in Spring and ripening in Summer.',
     emoji: '🥭',
   },
 };
@@ -731,4 +741,369 @@ export const AUTOMATION_TIERS = {
     { level: 3, name: 'Homestead Animal Haven', cost: 1300, gems: 25, intervalSec: 10, desc: 'Keeps all livestock in perpetual joyful contentment with heart cascades.' },
   ],
 };
+
+// --- RARE, EPIC, AND LEGENDARY HARVEST DROP SYSTEM ---
+export interface RareDropDef {
+  itemKey: string;
+  name: string;
+  icon: string;
+  rarity: ItemRarity;
+  multiplier: number;
+}
+
+export const RARE_HARVEST_CATALOG: Record<string, { rare: RareDropDef; epic: RareDropDef; legendary: RareDropDef }> = {
+  wheat: {
+    rare: { itemKey: 'rare_plump_wheat', name: 'Plump Amber Wheat', icon: '🌾', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_shiny_wheat', name: 'Shiny Sunlit Wheat', icon: '✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_bushy_wheat', name: 'Bushy Wheat', icon: '👑', rarity: 'legendary', multiplier: 8.0 },
+  },
+  egg: {
+    rare: { itemKey: 'rare_plump_egg', name: 'Speckled Farm Egg', icon: '🥚', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_shiny_egg', name: 'Shiny Egg', icon: '✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_golden_egg', name: 'Golden Egg', icon: '👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  strawberry: {
+    rare: { itemKey: 'rare_sugar_strawberry', name: 'Sugar Heart Berry', icon: '🍓', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_ruby_strawberry', name: 'Ruby Jewel Strawberry', icon: '💎', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_starburst_strawberry', name: 'Starburst Strawberry', icon: '🌟', rarity: 'legendary', multiplier: 8.0 },
+  },
+  carrot: {
+    rare: { itemKey: 'rare_golden_carrot', name: 'Crisp Golden Carrot', icon: '🥕', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_giant_carrot', name: 'Colossal King Carrot', icon: '🥕✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_aurora_carrot', name: 'Aurora Prismatic Carrot', icon: '🌈', rarity: 'legendary', multiplier: 8.0 },
+  },
+  corn: {
+    rare: { itemKey: 'rare_rainbow_corn', name: 'Rainbow Kernel Corn', icon: '🌽', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_gem_corn', name: 'Glass Gem Indian Corn', icon: '💎', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_solar_corn', name: 'Sunburst Solar Corn', icon: '☀️', rarity: 'legendary', multiplier: 8.0 },
+  },
+  sunflower: {
+    rare: { itemKey: 'rare_fire_sunflower', name: 'Sunfire Blossom', icon: '🌻', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_radiant_sunflower', name: 'Radiant Corona Blossom', icon: '✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_solar_sunflower', name: 'Celestial Sun Core', icon: '🌟', rarity: 'legendary', multiplier: 8.0 },
+  },
+  pumpkin: {
+    rare: { itemKey: 'rare_sugar_pumpkin', name: 'Cinnamon Sugar Pumpkin', icon: '🎃', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_giant_pumpkin', name: 'Colossal Giant Pumpkin', icon: '🎃✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_mythic_pumpkin', name: 'Mythic Cinder Pumpkin', icon: '👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  frostberry: {
+    rare: { itemKey: 'rare_glacier_berry', name: 'Glacier Ice Berry', icon: '🫐', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_aurora_berry', name: 'Boreal Aurora Berry', icon: '🌌', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_starlight_berry', name: 'Starlight Frozen Berry', icon: '❄️👑', rarity: 'legendary', multiplier: 8.0 },
+  },
+  palay: {
+    rare: { itemKey: 'rare_jasmine_palay', name: 'Fragrant Jasmine Palay', icon: '🌾', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_pearl_palay', name: 'Pearl White Heirloom Palay', icon: '🦪', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_imperial_palay', name: 'Imperial Golden Palay', icon: '🌾👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  ube: {
+    rare: { itemKey: 'rare_royal_ube', name: 'Royal Bohol Ube', icon: '🍠', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_velvet_ube', name: 'Velvet Crown Deep Ube', icon: '👑', rarity: 'epic', multiplier: 4.5 },
+    legendary: { itemKey: 'legendary_celestial_ube', name: 'Celestial Amethyst Ube', icon: '💎', rarity: 'legendary', multiplier: 10.0 },
+  },
+  mango: {
+    rare: { itemKey: 'rare_honey_mango', name: 'Honey Nectar Mango', icon: '🥭', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_royal_mango', name: 'Royal Sunburst Mango', icon: '🌟', rarity: 'epic', multiplier: 4.5 },
+    legendary: { itemKey: 'legendary_divine_mango', name: 'Divine Golden Mango', icon: '🥭👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  milk: {
+    rare: { itemKey: 'rare_cream_milk', name: 'Cream Top Rich Milk', icon: '🥛', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_clotted_milk', name: 'Golden Clotted Milk', icon: '🥛✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_carabao_nectar', name: 'Mythic Carabao Nectar Milk', icon: '🥛👑', rarity: 'legendary', multiplier: 8.0 },
+  },
+  wool: {
+    rare: { itemKey: 'rare_silk_wool', name: 'Silk Merino Fleece', icon: '🧶', rarity: 'rare', multiplier: 2.0 },
+    epic: { itemKey: 'epic_rainbow_wool', name: 'Prismatic Spun Wool', icon: '🌈', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_golden_fleece', name: 'Golden Fleece of Legend', icon: '🧶👑', rarity: 'legendary', multiplier: 8.0 },
+  },
+  ostrich_egg: {
+    rare: { itemKey: 'rare_spotted_ostrich_egg', name: 'Speckled Giant Ostrich Egg', icon: '🪺', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_marble_ostrich_egg', name: 'Marble Ostrich Egg', icon: '🪨✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_prismatic_ostrich_egg', name: 'Prismatic Gem Ostrich Egg', icon: '🪺👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  rabbit_wool: {
+    rare: { itemKey: 'rare_angora_fur', name: 'Fluffy Angora Fur', icon: '🐇', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_velvet_angora', name: 'Velvet Royal Angora', icon: '🧶✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_starlight_angora', name: 'Golden Starlight Angora', icon: '🌟👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  tilapia: {
+    rare: { itemKey: 'rare_golden_tilapia', name: 'Golden River Tilapia', icon: '🐟', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_emerald_tilapia', name: 'Emerald Lake Tilapia', icon: '🐠✨', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_diamond_tilapia', name: 'Diamond Crown Tilapia', icon: '💎👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+  milkfish: {
+    rare: { itemKey: 'rare_silver_bangus', name: 'Giant Dagupan Bangus', icon: '🐟', rarity: 'rare', multiplier: 2.2 },
+    epic: { itemKey: 'epic_king_bangus', name: 'Silver King Bangus', icon: '👑', rarity: 'epic', multiplier: 4.0 },
+    legendary: { itemKey: 'legendary_dragon_bangus', name: 'Imperial Dragon Bangus', icon: '🐉👑', rarity: 'legendary', multiplier: 10.0 },
+  },
+};
+
+export function getRareHarvestDrop(
+  baseKey: string,
+  extraRareBuff = false
+): { itemKey: string; name: string; icon: string; rarity: ItemRarity; multiplier: number } | null {
+  const entry = RARE_HARVEST_CATALOG[baseKey];
+  if (!entry) return null;
+
+  const roll = Math.random();
+  const buffModifier = extraRareBuff ? 1.6 : 1.0;
+
+  // 3% Legendary chance (buffed: 4.8%)
+  if (roll < 0.03 * buffModifier) {
+    return entry.legendary;
+  }
+  // 7% Epic chance (buffed: 11.2%)
+  if (roll < 0.1 * buffModifier) {
+    return entry.epic;
+  }
+  // 15% Rare chance (buffed: 24%)
+  if (roll < 0.25 * buffModifier) {
+    return entry.rare;
+  }
+
+  return null;
+}
+
+// --- RECIPE-BASED COOKING SIMULATION CATALOG ---
+export const COOKING_RECIPES: CookingRecipe[] = [
+  {
+    id: 'recipe_sinigang_bangus',
+    name: 'Sinigang na Bangus',
+    filipinoName: 'Sour Tamarind Fish Stew',
+    category: 'main',
+    icon: '🍲',
+    description: 'Iconic Filipino sour tamarind broth with tender milkfish and golden palay rice.',
+    ingredients: [
+      { itemKey: 'milkfish', itemName: 'Bangus (Milkfish)', count: 1, icon: '🐟' },
+      { itemKey: 'palay', itemName: 'Golden Palay', count: 1, icon: '🌾' },
+    ],
+    cookTimeSec: 3,
+    sellValue: 240,
+    buffDescription: '+35% Crop Growth Speed for 3 minutes!',
+    buffType: 'growth_speed',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_inihaw_tilapia',
+    name: 'Inihaw na Tilapia & Rice',
+    filipinoName: 'Charcoal Grilled River Tilapia',
+    category: 'main',
+    icon: '🐟',
+    description: 'Charcoal grilled stuffed tilapia served on banana leaf with steaming hot rice.',
+    ingredients: [
+      { itemKey: 'tilapia', itemName: 'Fresh Tilapia', count: 1, icon: '🐟' },
+      { itemKey: 'palay', itemName: 'Golden Palay', count: 1, icon: '🌾' },
+    ],
+    cookTimeSec: 3,
+    sellValue: 200,
+    buffDescription: '+25% Extra Coins on all harvests for 3 minutes!',
+    buffType: 'coin_boost',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_ube_halaya',
+    name: 'Ube Halaya Jam',
+    filipinoName: 'Sweet Purple Yam Jam',
+    category: 'dessert',
+    icon: '🍠',
+    description: 'Slow-stirred creamy purple yam jam with sweet milk and latik curd.',
+    ingredients: [
+      { itemKey: 'ube', itemName: 'Purple Yam', count: 2, icon: '🍠' },
+      { itemKey: 'milk', itemName: 'Farm Milk', count: 1, icon: '🥛' },
+    ],
+    cookTimeSec: 4,
+    sellValue: 280,
+    buffDescription: 'Double Harvest Chance on next crops for 3 minutes!',
+    buffType: 'double_harvest',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_mango_float',
+    name: 'Carabao Mango Float',
+    filipinoName: 'Graham Mango Icebox Cake',
+    category: 'dessert',
+    icon: '🥭',
+    description: 'Layers of sweet ripe carabao mango, cream, and crunchy graham crust.',
+    ingredients: [
+      { itemKey: 'mango', itemName: 'Carabao Mango', count: 2, icon: '🥭' },
+      { itemKey: 'milk', itemName: 'Farm Milk', count: 1, icon: '🥛' },
+    ],
+    cookTimeSec: 3,
+    sellValue: 310,
+    buffDescription: '+50% Extra XP on all farm activities for 3 minutes!',
+    buffType: 'xp_boost',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_ostrich_omelette',
+    name: 'Royal Ostrich Omelette',
+    filipinoName: 'Giant Farm Omelette',
+    category: 'breakfast',
+    icon: '🍳',
+    description: 'Massive fluffy golden omelette prepared from a fresh giant ostrich egg and crisp carrots.',
+    ingredients: [
+      { itemKey: 'ostrich_egg', itemName: 'Ostrich Egg', count: 1, icon: '🪺' },
+      { itemKey: 'carrot', itemName: 'Crisp Carrot', count: 1, icon: '🥕' },
+    ],
+    cookTimeSec: 4,
+    sellValue: 360,
+    buffDescription: '+35% Crop Growth Speed & +25% Coins for 3 minutes!',
+    buffType: 'growth_speed',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_rustic_bread',
+    name: 'Artisan Farm Bread',
+    filipinoName: 'Fresh Baked Sourdough',
+    category: 'breakfast',
+    icon: '🍞',
+    description: 'Warm crusty loaf baked from freshly stone-milled golden wheat.',
+    ingredients: [
+      { itemKey: 'wheat', itemName: 'Golden Wheat', count: 2, icon: '🌾' },
+      { itemKey: 'milk', itemName: 'Farm Milk', count: 1, icon: '🥛' },
+    ],
+    cookTimeSec: 2,
+    sellValue: 120,
+    buffDescription: '+20% Extra XP for 2 minutes!',
+    buffType: 'xp_boost',
+    buffDurationSec: 120,
+  },
+  {
+    id: 'recipe_berry_pancake',
+    name: 'Strawberry Cloud Pancakes',
+    filipinoName: 'Berry Fluffy Hotcakes',
+    category: 'breakfast',
+    icon: '🥞',
+    description: 'Tower of fluffy buttermilk pancakes topped with sweet strawberries.',
+    ingredients: [
+      { itemKey: 'strawberry', itemName: 'Sweet Strawberry', count: 2, icon: '🍓' },
+      { itemKey: 'wheat', itemName: 'Golden Wheat', count: 1, icon: '🌾' },
+      { itemKey: 'egg', itemName: 'Farm Egg', count: 1, icon: '🥚' },
+    ],
+    cookTimeSec: 3,
+    sellValue: 220,
+    buffDescription: '+30% Coin Boost for 3 minutes!',
+    buffType: 'coin_boost',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_pastillas',
+    name: 'Carabao Milk Pastillas',
+    filipinoName: 'Pastillas de Leche',
+    category: 'dessert',
+    icon: '🍬',
+    description: 'Hand-rolled milk candies made from creamy fresh Carabao milk wrapped in papel de hapon.',
+    ingredients: [
+      { itemKey: 'milk', itemName: 'Carabao Milk', count: 2, icon: '🥛' },
+      { itemKey: 'wheat', itemName: 'Golden Wheat', count: 1, icon: '🌾' },
+    ],
+    cookTimeSec: 2,
+    sellValue: 250,
+    buffDescription: 'Double Harvest Chance on next crops for 3 minutes!',
+    buffType: 'double_harvest',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_pumpkin_soup',
+    name: 'Roasted Pumpkin Soup',
+    filipinoName: 'Creamy Squash Stew',
+    category: 'main',
+    icon: '🥣',
+    description: 'Comforting autumn pumpkin soup blended with farm cream and roasted spices.',
+    ingredients: [
+      { itemKey: 'pumpkin', itemName: 'Spiced Pumpkin', count: 1, icon: '🎃' },
+      { itemKey: 'carrot', itemName: 'Crisp Carrot', count: 1, icon: '🥕' },
+      { itemKey: 'milk', itemName: 'Farm Milk', count: 1, icon: '🥛' },
+    ],
+    cookTimeSec: 3,
+    sellValue: 290,
+    buffDescription: '+30% Crop Growth Speed for 3 minutes!',
+    buffType: 'growth_speed',
+    buffDurationSec: 180,
+  },
+  {
+    id: 'recipe_legendary_fiesta',
+    name: 'Grand Naga Fiesta Feast',
+    filipinoName: 'Bicolandia Royal Platter',
+    category: 'main',
+    icon: '🍱',
+    description: 'The ultimate harvest festival platter with golden palay, bangus, ube halaya, and mango.',
+    ingredients: [
+      { itemKey: 'palay', itemName: 'Golden Palay', count: 2, icon: '🌾' },
+      { itemKey: 'milkfish', itemName: 'Bangus (Milkfish)', count: 1, icon: '🐟' },
+      { itemKey: 'ube', itemName: 'Purple Yam', count: 1, icon: '🍠' },
+      { itemKey: 'mango', itemName: 'Carabao Mango', count: 1, icon: '🥭' },
+    ],
+    cookTimeSec: 5,
+    sellValue: 750,
+    buffDescription: 'All Buffs Active: Double Harvest, 2x Coins & 2x Speed for 5 minutes!',
+    buffType: 'double_harvest',
+    buffDurationSec: 300,
+  },
+];
+
+// --- BARN UPGRADE CATALOG ---
+export const BARN_UPGRADES = [
+  { level: 1, name: 'Rustic Granary', capacity: 100, cost: 0, icon: '🛖', description: 'Cozy timber granary for basic harvests.' },
+  { level: 2, name: 'Extended Storehouse', capacity: 300, cost: 450, icon: '🏛️', description: 'Reinforced cedar storehouse with cooling racks for rare harvests.' },
+  { level: 3, name: 'Grand Agricultural Silo', capacity: 800, cost: 1100, icon: '🏰', description: 'Massive automated grain silo with climate control & quality preservation.' },
+];
+
+// --- LAND EXPANSIONS ---
+export const LAND_EXPANSIONS = [
+  {
+    expansion: 1,
+    targetGridSize: 14,
+    name: 'River Valley Acreage',
+    cost: 550,
+    gems: 10,
+    minHouseLevel: 2,
+    minBarnLevel: 2,
+    description: 'Clears overgrown brush toward the riverbank, expanding Naga Farm from 12x12 to 14x14!',
+  },
+  {
+    expansion: 2,
+    targetGridSize: 16,
+    name: 'Mayon Foothills Territory',
+    cost: 1200,
+    gems: 25,
+    minHouseLevel: 3,
+    minBarnLevel: 2,
+    description: 'Incorporates fertile volcanic soil plots, expanding Naga Farm from 14x14 to 16x16!',
+  },
+];
+
+// Expands grid tiles preserving existing structures and scattering fertile soil & decor in new bounds
+export function expandGridTiles(currentTiles: FarmTile[], oldGridSize: number, newGridSize: number): FarmTile[] {
+  const map = new Map<string, FarmTile>();
+  currentTiles.forEach((t) => map.set(`${t.x},${t.y}`, t));
+
+  const expanded: FarmTile[] = [];
+
+  for (let x = 0; x < newGridSize; x++) {
+    for (let y = 0; y < newGridSize; y++) {
+      const key = `${x},${y}`;
+      if (map.has(key)) {
+        expanded.push(map.get(key)!);
+      } else {
+        // Newly cleared land
+        let type: FarmTile['type'] = 'grass';
+        let decor: FarmTile['decor'] = undefined;
+
+        // Occasional wild wildflower bed or trees on borders
+        if ((x === newGridSize - 1 || y === newGridSize - 1) && (x + y) % 3 === 0) {
+          type = 'flower_bed';
+        } else if ((x === newGridSize - 2 && y % 4 === 1) || (y === newGridSize - 2 && x % 4 === 2)) {
+          decor = { id: `decor_cherry_${x}_${y}`, type: 'cherry_tree' };
+        }
+
+        expanded.push({ x, y, type, decor });
+      }
+    }
+  }
+
+  return expanded;
+}
+
 

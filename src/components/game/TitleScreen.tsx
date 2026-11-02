@@ -129,10 +129,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               fontSize="44"
               fontWeight="800"
               fontFamily="'Outfit', sans-serif"
-              letterSpacing="1.5"
+              letterSpacing="2.5"
               filter="url(#glow)"
             >
-              MEADOWBROOK
+              NAGA FARM
             </text>
 
             <text
@@ -140,19 +140,19 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               y="98"
               textAnchor="middle"
               fill="#f8fafc"
-              fontSize="16"
+              fontSize="14"
               fontWeight="600"
               fontFamily="'Plus Jakarta Sans', sans-serif"
-              letterSpacing="7"
+              letterSpacing="5"
               opacity="0.95"
             >
-              FARMSTEAD
+              BICOLANDIA HOMESTEAD
             </text>
           </svg>
         </div>
 
         <p className="text-sm sm:text-base text-emerald-100/90 font-medium max-w-md mx-auto leading-relaxed mb-6">
-          Cultivate your countryside haven. Sow seasonal crops, tend fluffy animals, fulfill village orders, and unwind at your own pace.
+          Cultivate your countryside haven in Naga. Sow seasonal crops, tend water buffalo and livestock, cook authentic recipes, and expand your fertile land.
         </p>
 
         {/* Primary Start CTA Button */}

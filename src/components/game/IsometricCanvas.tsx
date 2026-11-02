@@ -505,8 +505,17 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       }
 
       // 1. Dynamic Horizon Background Palette
+      const isNight = state.isNightMode || timeOfDay === 'night';
       const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-      if (weather === 'thunderstorm') {
+      if (isNight) {
+        bgGrad.addColorStop(0, '#020617');
+        bgGrad.addColorStop(0.45, '#0f172a');
+        bgGrad.addColorStop(1, '#1e1b4b');
+      } else if (timeOfDay === 'sunset') {
+        bgGrad.addColorStop(0, '#7c2d12');
+        bgGrad.addColorStop(0.5, '#c2410c');
+        bgGrad.addColorStop(1, '#3b6e31');
+      } else if (weather === 'thunderstorm') {
         bgGrad.addColorStop(0, '#1e293b');
         bgGrad.addColorStop(0.5, '#334155');
         bgGrad.addColorStop(1, '#1e2836');
@@ -534,6 +543,19 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
       }
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
+
+      // Twinkling stars in night sky
+      if (isNight) {
+        for (let s = 0; s < 35; s++) {
+          const sx = (s * 157.3) % width;
+          const sy = (s * 83.7) % (height * 0.45);
+          const starAlpha = 0.25 + Math.sin(now / 400 + s * 2) * 0.25;
+          ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
+          ctx.beginPath();
+          ctx.arc(sx, sy, s % 3 === 0 ? 1.5 : 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
       // Sort tiles by gx + gy for correct depth
       const sortedTiles = [...state.tiles].sort((a, b) => a.x + a.y - (b.x + b.y));
@@ -1390,6 +1412,102 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(-12 * zoom, 4 * zoom, 5 * zoom, 2 * zoom);
             ctx.fillRect(8 * zoom, 4 * zoom, 5 * zoom, 2 * zoom);
+          } else if (an.type === 'ostrich') {
+            // Ostrich (Giant Bird with fluffy body, tall neck, plumes)
+            // Fluffy dark body
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.ellipse(0, -14 * zoom, 13 * zoom, 10 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White tail feathers/plumes
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.ellipse(10 * zoom, -16 * zoom, 6 * zoom, 5 * zoom, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Long graceful neck extending upward
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 3.5 * zoom;
+            ctx.beginPath();
+            ctx.moveTo(-6 * zoom, -14 * zoom);
+            ctx.quadraticCurveTo(-10 * zoom, -26 * zoom, -12 * zoom, -34 * zoom + idleWiggle);
+            ctx.stroke();
+
+            // Ostrich Head
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.ellipse(-12 * zoom, -35 * zoom + idleWiggle, 5 * zoom, 4 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Yellow Beak
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.moveTo(-17 * zoom, -35 * zoom + idleWiggle);
+            ctx.lineTo(-12 * zoom, -37 * zoom + idleWiggle);
+            ctx.lineTo(-12 * zoom, -33 * zoom + idleWiggle);
+            ctx.closePath();
+            ctx.fill();
+
+            // Alert Eye
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-12 * zoom, -36 * zoom + idleWiggle, 1.2 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Long Sturdy Legs
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 2.5 * zoom;
+            ctx.beginPath();
+            ctx.moveTo(-4 * zoom, -5 * zoom);
+            ctx.lineTo(-4 * zoom, 6 * zoom);
+            ctx.moveTo(4 * zoom, -5 * zoom);
+            ctx.lineTo(4 * zoom, 6 * zoom);
+            ctx.stroke();
+          } else if (an.type === 'rabbit') {
+            // Fluffy Country Bunny (White/Cream with twitching pink ears)
+            const earWiggle = Math.sin(now / 150 + tile.x) * 0.2;
+            const hopOffset = Math.abs(Math.sin(now / 200 + tile.y)) * 2 * zoom;
+
+            // Round fluffy body
+            ctx.fillStyle = '#fdf4ff';
+            ctx.beginPath();
+            ctx.ellipse(0, -8 * zoom - hopOffset, 10 * zoom, 8 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Round Head
+            ctx.beginPath();
+            ctx.ellipse(-7 * zoom, -13 * zoom + idleWiggle - hopOffset, 6 * zoom, 5.5 * zoom, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Fluffy white cotton tail
+            ctx.beginPath();
+            ctx.arc(9 * zoom, -8 * zoom - hopOffset, 3.5 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Long upright ears with pink interior
+            ctx.fillStyle = '#fdf4ff';
+            ctx.beginPath();
+            ctx.ellipse(-9 * zoom, -21 * zoom + idleWiggle - hopOffset, 2.5 * zoom, 6.5 * zoom, -0.15 + earWiggle, 0, Math.PI * 2);
+            ctx.ellipse(-5 * zoom, -21 * zoom + idleWiggle - hopOffset, 2.5 * zoom, 6.5 * zoom, 0.15 - earWiggle, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath();
+            ctx.ellipse(-9 * zoom, -21 * zoom + idleWiggle - hopOffset, 1.2 * zoom, 4.5 * zoom, -0.15 + earWiggle, 0, Math.PI * 2);
+            ctx.ellipse(-5 * zoom, -21 * zoom + idleWiggle - hopOffset, 1.2 * zoom, 4.5 * zoom, 0.15 - earWiggle, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pink nose & eye
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(-11 * zoom, -13 * zoom + idleWiggle - hopOffset, 1 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#1e1b4b';
+            ctx.beginPath();
+            ctx.arc(-8 * zoom, -15 * zoom + idleWiggle - hopOffset, 1.2 * zoom, 0, Math.PI * 2);
+            ctx.fill();
           }
           ctx.restore();
 
@@ -1406,16 +1524,28 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
             ctx.font = `${Math.floor(11 * zoom)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const icon = (an.type === 'cow' || an.type === 'carabao') ? '🥛' : an.type === 'chicken' ? '🥚' : an.type === 'sheep' ? '🧶' : '💖';
+            const icon =
+              an.type === 'ostrich'
+                ? '🪺'
+                : an.type === 'rabbit'
+                  ? '🐇'
+                  : an.type === 'cow' || an.type === 'carabao'
+                    ? '🥛'
+                    : an.type === 'chicken'
+                      ? '🥚'
+                      : an.type === 'sheep'
+                        ? '🧶'
+                        : '💖';
             ctx.fillText(icon, sx, bubbleY);
           }
         }
       });
 
       // 4. Hover Cursor
+      const currentGridSize = state.gridSize || GRID_SIZE;
       const hx = interactionRef.current.hoveredGridX;
       const hy = interactionRef.current.hoveredGridY;
-      if (hx >= 0 && hx < GRID_SIZE && hy >= 0 && hy < GRID_SIZE) {
+      if (hx >= 0 && hx < currentGridSize && hy >= 0 && hy < currentGridSize) {
         const { sx, sy } = gridToScreen(hx, hy, width, height);
         const tw = TILE_WIDTH * zoom;
         const th = TILE_HEIGHT * zoom;
@@ -1563,11 +1693,47 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         ctx.fillRect(0, 0, width, height);
       }
 
-      if (timeOfDay === 'sunset') {
-        ctx.fillStyle = 'rgba(251, 146, 60, 0.12)';
+      if (isNight) {
+        // Deep Indigo Midnight wash
+        ctx.fillStyle = 'rgba(10, 15, 30, 0.58)';
         ctx.fillRect(0, 0, width, height);
-      } else if (timeOfDay === 'night') {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.38)';
+
+        // Luminous glowing warm lanterns and glowing windows
+        sortedTiles.forEach((tile) => {
+          if (
+            tile.decor?.type === 'lantern' ||
+            tile.structure?.type === 'farmhouse' ||
+            tile.structure?.type === 'bahay_kubo' ||
+            tile.structure?.type === 'cottage' ||
+            tile.structure?.type === 'windmill'
+          ) {
+            const { sx, sy } = gridToScreen(tile.x, tile.y, width, height);
+            const radius = tile.decor?.type === 'lantern' ? 44 * zoom : 68 * zoom;
+            const glow = ctx.createRadialGradient(sx, sy - 16 * zoom, 2, sx, sy - 16 * zoom, radius);
+            glow.addColorStop(0, 'rgba(254, 240, 138, 0.42)');
+            glow.addColorStop(0.45, 'rgba(251, 191, 36, 0.16)');
+            glow.addColorStop(1, 'rgba(251, 191, 36, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(sx, sy - 16 * zoom, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        // Fireflies / Alitaptap drifting across the farm at night!
+        for (let f = 0; f < 10; f++) {
+          const fx = width / 2 + Math.cos(now / 1100 + f * 1.3) * (width * 0.42);
+          const fy = height / 2 + Math.sin(now / 850 + f * 1.9) * (height * 0.38);
+          const fAlpha = 0.35 + Math.sin(now / 280 + f * 2) * 0.35;
+          if (fAlpha > 0.05) {
+            ctx.fillStyle = `rgba(217, 249, 157, ${fAlpha})`;
+            ctx.beginPath();
+            ctx.arc(fx, fy, 2.5 * zoom, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else if (timeOfDay === 'sunset') {
+        ctx.fillStyle = 'rgba(251, 146, 60, 0.15)';
         ctx.fillRect(0, 0, width, height);
       } else if (timeOfDay === 'morning') {
         ctx.fillStyle = 'rgba(254, 240, 138, 0.06)';

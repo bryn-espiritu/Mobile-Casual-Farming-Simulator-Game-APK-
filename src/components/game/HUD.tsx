@@ -12,6 +12,8 @@ interface HUDProps {
   onOpenSettings: () => void;
   onOpenHouseCustomizer: () => void;
   onOpenAutomation: () => void;
+  onOpenCooking: () => void;
+  onOpenLandExpansion: () => void;
   onAdvanceDay: () => void;
   onToggleTimeOfDay: () => void;
   onCycleWeather: () => void;
@@ -26,6 +28,8 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenSettings,
   onOpenHouseCustomizer,
   onOpenAutomation,
+  onOpenCooking,
+  onOpenLandExpansion,
   onAdvanceDay,
   onToggleTimeOfDay,
   onCycleWeather,
@@ -166,6 +170,30 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Side Quick Actions on right thumb side */}
       <div className="pointer-events-none self-end flex flex-col gap-2 mb-20 sm:mb-24">
+        {/* Cooking Kusina Simulator Button */}
+        <button
+          onClick={() => {
+            sound.playTap();
+            onOpenCooking();
+          }}
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-2xl shadow-lg border border-orange-300/40 active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-base">🍳</span>
+          <span className="hidden sm:inline">Kusina</span>
+        </button>
+
+        {/* Land Expansion Button */}
+        <button
+          onClick={() => {
+            sound.playTap();
+            onOpenLandExpansion();
+          }}
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs rounded-2xl shadow-lg border border-emerald-400/40 active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-base">🏞️</span>
+          <span className="hidden sm:inline">Expand</span>
+        </button>
+
         {/* House Architecture & Furniture Customizer Button */}
         <button
           onClick={() => {

@@ -37,6 +37,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
 
   const animalsCatalog = [
     { id: 'animal_carabao', name: 'Kalabaw (Water Buffalo)', cost: 380, icon: '🐃', produce: 'Rich Milk 🥛', desc: 'Hardworking Philippine water buffalo that plows fields and gives rich milk.', minLevel: 1 },
+    { id: 'animal_ostrich', name: 'Giant Ostrich', cost: 480, icon: '🪺', produce: 'Ostrich Egg 🪺', desc: 'Majestic bird producing massive eggs with rare golden egg variants.', minLevel: 2 },
+    { id: 'animal_rabbit', name: 'Angora Rabbit', cost: 220, icon: '🐇', produce: 'Angora Wool 🧶', desc: 'Fluffy country bunny yielding soft spun angora wool.', minLevel: 1 },
     { id: 'animal_chicken', name: 'Heritage Chicken', cost: 120, icon: '🐔', produce: 'Eggs 🥚', desc: 'Produces fresh brown eggs daily.', minLevel: 1 },
     { id: 'animal_cow', name: 'Jersey Dairy Cow', cost: 350, icon: '🐄', produce: 'Milk 🥛', desc: 'Gentle dairy cow providing rich milk.', minLevel: 2 },
     { id: 'animal_sheep', name: 'Merino Sheep', cost: 280, icon: '🐑', produce: 'Wool 🧶', desc: 'Fluffy sheep for warm sweater wool.', minLevel: 2 },
@@ -146,7 +148,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 const crop = CROPS[type];
                 const seedKey = `seed_${type}`;
                 const owned = gameState.inventory[seedKey] ?? 0;
-                const canAfford = gameState.coins >= crop.seedCost;
+                const inSeason = crop.allowedSeasons ? crop.allowedSeasons.includes(gameState.season) : true;
 
                 return (
                   <div
@@ -158,11 +160,22 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         {crop.emoji}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-white truncate">{crop.name}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-white truncate">{crop.name}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                              inSeason
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-amber-950/40 text-amber-300 border border-amber-500/30'
+                            }`}
+                          >
+                            {inSeason ? `✓ ${gameState.season}` : `Season: ${crop.allowedSeasons.join('/')}`}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
                           <span>⏱️ {crop.growthTimeSec}s</span>
                           <span>·</span>
-                          <span className="capitalize">{crop.seasonPreference}</span>
+                          <span>Sell: 🪙{crop.sellPrice}</span>
                         </div>
                         <span className="text-[10px] text-emerald-400">Owned: {owned}</span>
                       </div>

@@ -20,6 +20,8 @@ export type CropType =
   | 'ube'
   | 'mango';
 
+export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
 export interface CropDefinition {
   type: CropType;
   name: string;
@@ -28,6 +30,7 @@ export interface CropDefinition {
   seedCost: number;
   xpYield: number;
   seasonPreference: Season | 'all';
+  allowedSeasons: Season[];
   color: string;
   secondaryColor: string;
   description: string;
@@ -56,7 +59,8 @@ export type StructureType =
   | 'gazebo'
   | 'shed'
   | 'bahay_kubo'
-  | 'fish_pond';
+  | 'fish_pond'
+  | 'cookhouse';
 
 export type AnimalType =
   | 'chicken'
@@ -64,7 +68,9 @@ export type AnimalType =
   | 'sheep'
   | 'dog'
   | 'cat'
-  | 'carabao';
+  | 'carabao'
+  | 'ostrich'
+  | 'rabbit';
 
 export interface TileCrop {
   type: CropType;
@@ -201,6 +207,34 @@ export interface AutomationState {
   autoWaterLevel: number;
 }
 
+export interface CookingIngredient {
+  itemKey: string;
+  itemName: string;
+  count: number;
+  icon: string;
+}
+
+export interface CookingRecipe {
+  id: string;
+  name: string;
+  filipinoName?: string;
+  category: 'breakfast' | 'main' | 'dessert' | 'beverage';
+  icon: string;
+  description: string;
+  ingredients: CookingIngredient[];
+  cookTimeSec: number;
+  sellValue: number;
+  buffDescription: string;
+  buffType: 'growth_speed' | 'double_harvest' | 'coin_boost' | 'xp_boost';
+  buffDurationSec: number;
+}
+
+export interface ActiveBuff {
+  type: 'growth_speed' | 'double_harvest' | 'coin_boost' | 'xp_boost';
+  label: string;
+  expiresAt: number;
+}
+
 export interface GameState {
   version: number;
   farmName: string;
@@ -214,10 +248,13 @@ export interface GameState {
   seasonDay: number;
   totalDays: number;
   timeOfDay: TimeOfDay;
+  isNightMode: boolean;
   weather: WeatherType;
   gridSize: number;
   tiles: FarmTile[];
   inventory: Record<string, number>;
+  cookedDishes: Record<string, number>;
+  activeBuff?: ActiveBuff;
   tasks: SeasonalTask[];
   orders: TownOrder[];
   selectedSeed: CropType;
@@ -229,5 +266,7 @@ export interface GameState {
   totalAnimalsPetted: number;
   totalCoinsEarned: number;
   house: HouseCustomization;
+  barnLevel: number; // 1: Rustic Granary, 2: Extended Storehouse, 3: Grand Silo
+  landExpansions: number; // 0: 12x12, 1: 14x14, 2: 16x16
   automation: AutomationState;
 }

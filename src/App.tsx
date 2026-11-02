@@ -4,8 +4,29 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, ToolMode, CropType, FarmTile, SeasonalTask, TownOrder, Season, TimeOfDay, WeatherType, AutomationState } from './types/game';
-import { CROPS, getInitialOrders, getInitialTasks, GRID_SIZE, AUTOMATION_TIERS } from './constants/gameData';
+import {
+  GameState,
+  ToolMode,
+  CropType,
+  FarmTile,
+  SeasonalTask,
+  TownOrder,
+  Season,
+  TimeOfDay,
+  WeatherType,
+  AutomationState,
+  CookingRecipe,
+} from './types/game';
+import {
+  CROPS,
+  getInitialOrders,
+  getInitialTasks,
+  GRID_SIZE,
+  AUTOMATION_TIERS,
+  getRareHarvestDrop,
+  expandGridTiles,
+  LAND_EXPANSIONS,
+} from './constants/gameData';
 import { loadSavedGameState, saveGameState, getDefaultGameState, clearSavedGameState } from './services/storage';
 import { sound } from './services/audio';
 import { TitleScreen } from './components/game/TitleScreen';
@@ -20,6 +41,8 @@ import { SettingsModal } from './components/game/SettingsModal';
 import { PWAInstallModal } from './components/game/PWAInstallModal';
 import { HouseCustomizerModal } from './components/game/HouseCustomizerModal';
 import { AutomationModal } from './components/game/AutomationModal';
+import { CookingModal } from './components/game/CookingModal';
+import { LandExpansionModal } from './components/game/LandExpansionModal';
 
 export default function App() {
   const [screen, setScreen] = useState<'TITLE' | 'PLAYING'>('TITLE');
@@ -34,6 +57,25 @@ export default function App() {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isHouseCustomizerOpen, setIsHouseCustomizerOpen] = useState(false);
   const [isAutomationOpen, setIsAutomationOpen] = useState(false);
+  const [isCookingOpen, setIsCookingOpen] = useState(false);
+  const [isLandExpansionOpen, setIsLandExpansionOpen] = useState(false);
+
+  // In-game Floating Feedback Banner (for rare harvests, buffs, and alerts)
+  const [toastMessage, setToastMessage] = useState<{
+    id: string;
+    text: string;
+    subtext?: string;
+    rarity?: string;
+  } | null>(null);
+
+  // Auto-dismiss toast banner
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => {
+      setToastMessage(null);
+    }, 4200);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   // Relocating / Moving item state
   const [movingTile, setMovingTile] = useState<FarmTile | null>(null);
@@ -100,7 +142,11 @@ export default function App() {
     setGameState((prev) => {
       // House level 3 bonus: +25% XP
       const xpMultiplier = prev.house?.level >= 3 ? 1.25 : 1.0;
-      let currentXP = prev.xp + Math.round(amount * xpMultiplier);
+      const buffMultiplier =
+        prev.activeBuff && prev.activeBuff.type === 'xp_boost' && prev.activeBuff.expiresAt > Date.now()
+          ? 1.5
+          : 1.0;
+      let currentXP = prev.xp + Math.round(amount * xpMultiplier * buffMultiplier);
       let currentLevel = prev.level;
       let needed = currentLevel * 100;
       let didLevelUp = false;
@@ -134,6 +180,15 @@ export default function App() {
         const now = Date.now();
         const isRaining = prev.weather === 'rain' || prev.weather === 'thunderstorm';
 
+        // Check active buff expiry
+        let currentBuff = prev.activeBuff;
+        if (currentBuff && currentBuff.expiresAt <= now) {
+          currentBuff = undefined;
+          changed = true;
+        }
+
+        const isGrowthBuff = currentBuff && currentBuff.type === 'growth_speed';
+
         const newTiles = prev.tiles.map((tile) => {
           // Weather Hydration: Rain/Storm automatically waters any soil with crops
           let wateredState = tile.crop?.watered || false;
@@ -147,7 +202,8 @@ export default function App() {
             const cropDef = CROPS[tile.crop.type];
             if (cropDef) {
               const elapsedSec = (now - tile.crop.plantedAt) / 1000;
-              const speedMultiplier = (wateredState || isRaining) ? 1.8 : 1.0;
+              const baseSpeed = wateredState || isRaining ? 1.8 : 1.0;
+              const speedMultiplier = isGrowthBuff ? baseSpeed * 1.5 : baseSpeed;
               const progress = Math.min(1.0, (elapsedSec * speedMultiplier) / cropDef.growthTimeSec);
 
               if (progress !== tile.crop.growthProgress || wateredState !== tile.crop.watered) {
@@ -189,7 +245,7 @@ export default function App() {
         });
 
         if (!changed) return prev;
-        return { ...prev, tiles: newTiles };
+        return { ...prev, tiles: newTiles, activeBuff: currentBuff };
       });
     }, 1000);
 
@@ -398,6 +454,17 @@ export default function App() {
       }));
     } else if (tool === 'plant') {
       if (tile.type === 'soil' && !tile.crop) {
+        const cropDef = CROPS[gameState.selectedSeed];
+        if (cropDef && cropDef.allowedSeasons && !cropDef.allowedSeasons.includes(gameState.season)) {
+          sound.playTap();
+          setToastMessage({
+            id: `off_season_${Date.now()}`,
+            text: `⚠️ Off-Season Crop!`,
+            subtext: `${cropDef.name} only flourishes in ${cropDef.allowedSeasons.map((s) => s.toUpperCase()).join(' or ')}. Current season is ${gameState.season.toUpperCase()}.`,
+          });
+          return;
+        }
+
         const seedKey = `seed_${gameState.selectedSeed}`;
         const seedCount = gameState.inventory[seedKey] ?? 0;
 
@@ -442,27 +509,51 @@ export default function App() {
       if (tile.crop && tile.crop.isReady) {
         const cropType = tile.crop.type;
         const cropDef = CROPS[cropType];
+        const hasDoubleHarvest = gameState.activeBuff?.type === 'double_harvest' && gameState.activeBuff.expiresAt > Date.now();
+        const rareDrop = getRareHarvestDrop(cropType, hasDoubleHarvest);
+        const isRare = rareDrop.rarity !== 'common';
+
+        const coinBuff = gameState.activeBuff?.type === 'coin_boost' && gameState.activeBuff.expiresAt > Date.now() ? 1.5 : 1.0;
+        const bonus = gameState.house?.level >= 2 ? 1.15 : 1.0;
+        const revenue = Math.round(cropDef.sellPrice * rareDrop.multiplier * bonus * coinBuff);
+        const earnedXP = Math.round(cropDef.xpYield * (isRare ? 2.5 : 1));
+        const harvestQuantity = hasDoubleHarvest ? 2 : 1;
 
         setGameState((prev) => {
           const currentCount = prev.inventory[cropType] ?? 0;
-          const bonus = prev.house?.level >= 2 ? 1.15 : 1.0;
-          const revenue = Math.round(cropDef.sellPrice * bonus);
+          const rareCount = rareDrop.itemKey ? (prev.inventory[rareDrop.itemKey] ?? 0) : 0;
+          const newInv: Record<string, number> = {
+            ...prev.inventory,
+            [cropType]: currentCount + harvestQuantity,
+          };
+          if (rareDrop.itemKey) {
+            newInv[rareDrop.itemKey] = rareCount + 1;
+          }
 
           return {
             ...prev,
             coins: prev.coins + revenue,
             totalCoinsEarned: prev.totalCoinsEarned + revenue,
-            totalCropsHarvested: prev.totalCropsHarvested + 1,
-            inventory: {
-              ...prev.inventory,
-              [cropType]: currentCount + 1,
-            },
+            totalCropsHarvested: prev.totalCropsHarvested + harvestQuantity,
+            inventory: newInv,
             tiles: prev.tiles.map((t) => (t.x === x && t.y === y ? { ...t, crop: undefined } : t)),
           };
         });
 
-        addXP(cropDef.xpYield);
-        updateTaskProgress('harvest', 1);
+        if (isRare) {
+          sound.playRareHarvest(rareDrop.rarity);
+          setToastMessage({
+            id: `rare_${Date.now()}`,
+            text: `${rareDrop.rarity.toUpperCase()} HARVEST!`,
+            subtext: `You gathered ${rareDrop.name}! (${rareDrop.multiplier}x coin value)`,
+            rarity: rareDrop.rarity,
+          });
+        } else {
+          sound.playHarvest();
+        }
+
+        addXP(earnedXP);
+        updateTaskProgress('harvest', harvestQuantity);
       }
     } else if (tool === 'move') {
       setMovingTile(tile);
@@ -482,14 +573,57 @@ export default function App() {
       let collectedProduce = '';
       let rewardCoins = 10;
       let rewardXP = 15;
+      let rareItem = '';
+      let rareRarity = '';
+      let rareName = '';
+      let rareMultiplier = 1;
+      let animalType = 'cow';
 
       const newTiles = prev.tiles.map((t) => {
         if (t.animal && t.animal.id === animalId) {
+          animalType = t.animal.type;
           const produceReady = t.animal.produceReady;
           if (produceReady) {
-            collectedProduce = (t.animal.type === 'cow' || t.animal.type === 'carabao') ? 'milk' : t.animal.type === 'chicken' ? 'egg' : t.animal.type === 'sheep' ? 'wool' : 'love';
-            rewardCoins = t.animal.type === 'carabao' ? 45 : 35;
-            rewardXP = t.animal.type === 'carabao' ? 30 : 25;
+            if (t.animal.type === 'carabao') {
+              collectedProduce = 'carabao_milk';
+              rewardCoins = 60;
+              rewardXP = 35;
+            } else if (t.animal.type === 'cow') {
+              collectedProduce = 'milk';
+              rewardCoins = 40;
+              rewardXP = 25;
+            } else if (t.animal.type === 'chicken') {
+              collectedProduce = 'egg';
+              rewardCoins = 30;
+              rewardXP = 20;
+            } else if (t.animal.type === 'sheep') {
+              collectedProduce = 'wool';
+              rewardCoins = 45;
+              rewardXP = 25;
+            } else if (t.animal.type === 'ostrich') {
+              collectedProduce = 'ostrich_egg';
+              rewardCoins = 85;
+              rewardXP = 45;
+            } else if (t.animal.type === 'rabbit') {
+              collectedProduce = 'rabbit_wool';
+              rewardCoins = 50;
+              rewardXP = 30;
+            } else {
+              collectedProduce = 'egg';
+            }
+
+            // Rare Produce Check
+            if (collectedProduce) {
+              const hasDoubleHarvest = prev.activeBuff?.type === 'double_harvest' && prev.activeBuff.expiresAt > Date.now();
+              const drop = getRareHarvestDrop(collectedProduce, hasDoubleHarvest);
+              if (drop.rarity !== 'common') {
+                rareItem = drop.itemKey;
+                rareRarity = drop.rarity;
+                rareName = drop.name;
+                rareMultiplier = drop.multiplier;
+                rewardCoins = Math.round(rewardCoins * drop.multiplier);
+              }
+            }
           }
           return {
             ...t,
@@ -504,9 +638,24 @@ export default function App() {
         return t;
       });
 
+      sound.playAnimalPet(animalType);
+
       const newInventory = { ...prev.inventory };
-      if (collectedProduce && collectedProduce !== 'love') {
+      if (collectedProduce) {
         newInventory[collectedProduce] = (newInventory[collectedProduce] ?? 0) + 1;
+      }
+      if (rareItem) {
+        newInventory[rareItem] = (newInventory[rareItem] ?? 0) + 1;
+      }
+
+      if (rareRarity && rareRarity !== 'common') {
+        sound.playRareHarvest(rareRarity as any);
+        setToastMessage({
+          id: `rare_produce_${Date.now()}`,
+          text: `${rareRarity.toUpperCase()} PRODUCE!`,
+          subtext: `Your animal yielded ${rareName}! (${rareMultiplier}x value)`,
+          rarity: rareRarity,
+        });
       }
 
       return {
@@ -527,12 +676,29 @@ export default function App() {
   const handleStructureClick = useCallback((structureType: string, tile: FarmTile) => {
     if (structureType === 'farmhouse' || structureType === 'cottage' || structureType === 'bahay_kubo') {
       setIsHouseCustomizerOpen(true);
+    } else if (structureType === 'cookhouse') {
+      setIsCookingOpen(true);
     } else if (structureType === 'fish_pond') {
       // Aquaculture catch from Palaisdaan (Tilapia & Milkfish)
-      sound.playFishCatch();
       const isTilapia = Math.random() > 0.45;
       const fishItem = isTilapia ? 'tilapia' : 'milkfish';
-      const fishCoinVal = isTilapia ? 55 : 85;
+      const baseCoinVal = isTilapia ? 55 : 85;
+
+      const hasDoubleHarvest = gameState.activeBuff?.type === 'double_harvest' && gameState.activeBuff.expiresAt > Date.now();
+      const rareDrop = getRareHarvestDrop(fishItem, hasDoubleHarvest);
+      const isRare = rareDrop.rarity !== 'common';
+      const fishCoinVal = Math.round(baseCoinVal * (isRare ? rareDrop.multiplier : 1));
+
+      sound.playFishCatch();
+      if (isRare) {
+        sound.playRareHarvest(rareDrop.rarity);
+        setToastMessage({
+          id: `rare_fish_${Date.now()}`,
+          text: `${rareDrop.rarity.toUpperCase()} CATCH!`,
+          subtext: `You hooked a ${rareDrop.name}! (${rareDrop.multiplier}x coin value)`,
+          rarity: rareDrop.rarity,
+        });
+      }
 
       setGameState((prev) => ({
         ...prev,
@@ -541,10 +707,13 @@ export default function App() {
         inventory: {
           ...prev.inventory,
           [fishItem]: (prev.inventory[fishItem] ?? 0) + 1,
+          ...(rareDrop.itemKey ? { [rareDrop.itemKey]: (prev.inventory[rareDrop.itemKey] ?? 0) + 1 } : {}),
         },
       }));
-      addXP(25);
-    } else if (structureType === 'barn' || structureType === 'coop' || structureType === 'shed') {
+      addXP(isRare ? 50 : 25);
+    } else if (structureType === 'barn') {
+      setIsLandExpansionOpen(true);
+    } else if (structureType === 'coop' || structureType === 'shed') {
       setIsInventoryOpen(true);
     } else if (structureType === 'well') {
       sound.playWater();
@@ -741,7 +910,12 @@ export default function App() {
     const times: TimeOfDay[] = ['morning', 'day', 'sunset', 'night'];
     setGameState((prev) => {
       const nextIdx = (times.indexOf(prev.timeOfDay) + 1) % times.length;
-      return { ...prev, timeOfDay: times[nextIdx] };
+      const nextTime = times[nextIdx];
+      return {
+        ...prev,
+        timeOfDay: nextTime,
+        isNightMode: nextTime === 'night',
+      };
     });
   }, []);
 
@@ -958,6 +1132,140 @@ export default function App() {
     setGameState(getDefaultGameState());
     setIsSettingsOpen(false);
   }, []);
+
+  // Cooking Recipe Preparation
+  const handleCookRecipe = useCallback((recipe: CookingRecipe) => {
+    setGameState((prev) => {
+      // Deduct ingredients
+      const hasAll = recipe.ingredients.every((ing) => (prev.inventory[ing.itemKey] ?? 0) >= ing.count);
+      if (!hasAll) return prev;
+
+      const newInventory = { ...prev.inventory };
+      recipe.ingredients.forEach((ing) => {
+        newInventory[ing.itemKey] = (newInventory[ing.itemKey] ?? 0) - ing.count;
+      });
+
+      // Add dish to inventory
+      newInventory[recipe.id] = (newInventory[recipe.id] ?? 0) + 1;
+
+      const currentCooked = prev.cookedDishes || {};
+      const newCooked = {
+        ...currentCooked,
+        [recipe.id]: (currentCooked[recipe.id] ?? 0) + 1,
+      };
+
+      return {
+        ...prev,
+        coins: prev.coins + 30,
+        totalCoinsEarned: prev.totalCoinsEarned + 30,
+        inventory: newInventory,
+        cookedDishes: newCooked,
+      };
+    });
+
+    sound.playCookSuccess();
+    addXP(40);
+    setToastMessage({
+      id: `cook_${Date.now()}`,
+      text: `🍳 Prepared ${recipe.filipinoName || recipe.name}!`,
+      subtext: `Ready to consume for buffs or sell in your Kusina inventory.`,
+    });
+  }, [addXP]);
+
+  // Consuming cooked meal to activate buff
+  const handleEatDish = useCallback((recipe: CookingRecipe) => {
+    setGameState((prev) => {
+      const count = prev.inventory[recipe.id] ?? 0;
+      if (count <= 0) return prev;
+
+      const newInventory = {
+        ...prev.inventory,
+        [recipe.id]: count - 1,
+      };
+
+      const expiresAt = Date.now() + recipe.buffDurationSec * 1000;
+      const activeBuff = {
+        type: recipe.buffType,
+        label: recipe.buffDescription,
+        expiresAt,
+      };
+
+      return {
+        ...prev,
+        inventory: newInventory,
+        activeBuff,
+      };
+    });
+
+    sound.playCookSuccess();
+    setToastMessage({
+      id: `eat_${Date.now()}`,
+      text: `✨ Enjoyed ${recipe.name}!`,
+      subtext: `Active Buff: ${recipe.buffDescription} (${recipe.buffDurationSec}s)`,
+    });
+  }, []);
+
+  // Land Expansion
+  const handleExpandLand = useCallback(() => {
+    setGameState((prev) => {
+      const currentIdx = prev.landExpansions || 0;
+      const nextExp = LAND_EXPANSIONS[currentIdx];
+      if (!nextExp) return prev;
+
+      const houseLvl = prev.house?.level || 1;
+      const barnLvl = prev.barnLevel || 1;
+      if (
+        houseLvl < nextExp.minHouseLevel ||
+        barnLvl < nextExp.minBarnLevel ||
+        prev.coins < nextExp.cost ||
+        prev.gems < nextExp.gems
+      ) {
+        return prev;
+      }
+
+      const nextGridSize = nextExp.targetGridSize;
+      const newTiles = expandGridTiles(prev.tiles, prev.gridSize, nextGridSize);
+
+      sound.playExpandLand();
+      setToastMessage({
+        id: `expand_${Date.now()}`,
+        text: `🏞️ Naga Farm Expanded!`,
+        subtext: `Acreage widened to ${nextGridSize}×${nextGridSize}! More fertile soil awaits your plow.`,
+        rarity: 'legendary',
+      });
+
+      return {
+        ...prev,
+        coins: prev.coins - nextExp.cost,
+        gems: prev.gems - nextExp.gems,
+        gridSize: nextGridSize,
+        landExpansions: currentIdx + 1,
+        tiles: newTiles,
+      };
+    });
+    addXP(150);
+  }, [addXP]);
+
+  // Barn Upgrade
+  const handleUpgradeBarn = useCallback((level: number, cost: number) => {
+    setGameState((prev) => {
+      if (prev.coins < cost) return prev;
+
+      sound.playHammer();
+      setToastMessage({
+        id: `barn_${Date.now()}`,
+        text: `🌾 Granary Upgraded to Level ${level}!`,
+        subtext: `Extended silo capacity for Naga Farm harvests.`,
+      });
+
+      return {
+        ...prev,
+        coins: prev.coins - cost,
+        barnLevel: level,
+      };
+    });
+    addXP(75);
+  }, [addXP]);
 
   // Mobile Frame Wrapper Container
   const renderGameContent = () => {

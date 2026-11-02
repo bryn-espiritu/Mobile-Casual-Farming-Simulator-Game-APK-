@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CropType, ToolMode } from '../../types/game';
+import { CropType, ToolMode, Season } from '../../types/game';
 import { CROPS } from '../../constants/gameData';
 import { sound } from '../../services/audio';
 
@@ -10,6 +10,7 @@ interface ToolBarProps {
   onSelectSeed: (seed: CropType) => void;
   inventory: Record<string, number>;
   onOpenShop: () => void;
+  season?: Season;
 }
 
 export const ToolBar: React.FC<ToolBarProps> = ({
@@ -19,6 +20,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   onSelectSeed,
   inventory,
   onOpenShop,
+  season,
 }) => {
   const [showSeedPicker, setShowSeedPicker] = useState(false);
 
@@ -64,17 +66,26 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             const seedKey = `seed_${cropType}`;
             const count = inventory[seedKey] ?? 0;
             const isSelected = selectedSeed === cropType;
+            const inSeason = season && crop.allowedSeasons ? crop.allowedSeasons.includes(season) : true;
 
             return (
               <button
                 key={cropType}
                 onClick={() => handleSeedSelect(cropType)}
+                title={inSeason ? `${crop.name} (In Season)` : `${crop.name} (Only in ${crop.allowedSeasons.join('/')})`}
                 className={`relative flex flex-col items-center justify-center p-2 rounded-xl min-w-[58px] transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-emerald-600 text-white shadow-md scale-105 border border-emerald-300'
-                    : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/60'
+                    : inSeason
+                      ? 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/60'
+                      : 'bg-slate-900/60 text-slate-400 border border-amber-500/30 opacity-75'
                 }`}
               >
+                {!inSeason && (
+                  <span className="absolute -top-1.5 -right-1 text-[9px] bg-amber-600 text-white px-1 rounded-full font-bold">
+                    🔒
+                  </span>
+                )}
                 <span className="text-xl leading-none mb-1">{crop.emoji}</span>
                 <span className="text-[10px] font-bold truncate max-w-[50px] leading-tight">
                   {crop.name.split(' ')[1] || crop.name}

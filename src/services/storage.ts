@@ -1,40 +1,46 @@
 import { GameState } from '../types/game';
 import { createInitialTiles, getInitialOrders, getInitialTasks, GRID_SIZE } from '../constants/gameData';
 
-const STORAGE_KEY = 'meadowbrook_farm_v2';
+const STORAGE_KEY = 'naga_farm_v1';
 
 export function getDefaultGameState(): GameState {
   return {
-    version: 2,
-    farmName: 'Meadowbrook Farm',
+    version: 3,
+    farmName: 'Naga Farm',
     farmerName: 'Sunny',
     houseColor: '#b91c1c',
-    coins: 450,
-    gems: 20,
+    coins: 500,
+    gems: 25,
     xp: 0,
     level: 1,
     season: 'spring',
     seasonDay: 1,
     totalDays: 1,
-    timeOfDay: 'morning',
+    timeOfDay: 'day',
+    isNightMode: false,
     weather: 'sunny',
     gridSize: GRID_SIZE,
     tiles: createInitialTiles(),
     inventory: {
-      wheat: 4,
-      strawberry: 2,
-      egg: 3,
-      milk: 2,
-      tilapia: 3,
-      milkfish: 2,
-      seed_wheat: 10,
+      wheat: 6,
+      strawberry: 3,
+      egg: 4,
+      milk: 3,
+      palay: 8,
+      tilapia: 4,
+      milkfish: 3,
+      seed_wheat: 12,
       seed_strawberry: 6,
       seed_carrot: 4,
-      seed_corn: 2,
-      seed_palay: 8,
+      seed_corn: 3,
+      seed_palay: 10,
       seed_ube: 4,
       seed_mango: 2,
     },
+    cookedDishes: {},
+    activeBuff: undefined,
+    barnLevel: 1,
+    landExpansions: 0,
     tasks: getInitialTasks('spring'),
     orders: getInitialOrders(),
     selectedSeed: 'wheat',
@@ -73,7 +79,7 @@ export function getDefaultGameState(): GameState {
 
 export function loadSavedGameState(): GameState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('meadowbrook_farm_v1');
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('meadowbrook_farm_v2') || localStorage.getItem('meadowbrook_farm_v1');
     if (!raw) return getDefaultGameState();
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.tiles)) {
@@ -82,10 +88,19 @@ export function loadSavedGameState(): GameState {
 
     const defaultState = getDefaultGameState();
 
+    // Migrate farm name to Naga Farm
+    const farmName = parsed.farmName === 'Meadowbrook Farm' ? 'Naga Farm' : (parsed.farmName || 'Naga Farm');
+
     // Merge in defaults for any missing new keys
     return {
       ...defaultState,
       ...parsed,
+      farmName,
+      barnLevel: parsed.barnLevel || 1,
+      landExpansions: parsed.landExpansions || 0,
+      isNightMode: parsed.isNightMode || false,
+      cookedDishes: parsed.cookedDishes || {},
+      activeBuff: parsed.activeBuff,
       weather: parsed.weather || 'sunny',
       house: parsed.house || defaultState.house,
       automation: parsed.automation || defaultState.automation,
