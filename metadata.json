@@ -1,0 +1,8 @@
+{
+  "name": "Meadowbrook Farm",
+  "description": "A relaxing slow-paced isometric mobile farming simulation with interactive touch controls, customizable homestead, cozy seasonal tasks, and animal care.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

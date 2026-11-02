@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#bae6fd"/>
+    </linearGradient>
+    <linearGradient id="hillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#skyGrad)"/>
+  <circle cx="28" cy="28" r="16" fill="#fef08a" opacity="0.9"/>
+  <!-- Rolling Hills -->
+  <path d="M-10 100 Q 30 75 70 90 T 138 85 L 138 138 L -10 138 Z" fill="#22c55e"/>
+  <path d="M-10 115 Q 40 95 85 105 T 138 100 L 138 138 L -10 138 Z" fill="url(#hillGrad)"/>
+  <!-- Cute Red Barn -->
+  <polygon points="64,36 94,54 94,92 34,92 34,54" fill="#dc2626"/>
+  <polygon points="64,36 94,54 34,54" fill="#b91c1c"/>
+  <rect x="48" y="66" width="32" height="26" fill="#f8fafc" rx="2"/>
+  <path d="M52 68 L76 90 M76 68 L52 90" stroke="#dc2626" stroke-width="2.5"/>
+  <!-- Little Wheat -->
+  <path d="M22 84 Q 24 74 30 72" stroke="#eab308" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="30" cy="71" r="3" fill="#eab308"/>
+  <circle cx="27" cy="76" r="2.5" fill="#eab308"/>
+  <!-- Sunbeams / sparkles -->
+  <circle cx="106" cy="38" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="98" cy="26" r="3" fill="#ffffff" opacity="0.6"/>
+</svg>
