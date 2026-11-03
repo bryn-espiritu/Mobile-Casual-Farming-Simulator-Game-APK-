@@ -285,4 +285,6 @@ export interface GameState {
   barnLevel: number; // 1: Rustic Granary, 2: Extended Storehouse, 3: Grand Silo
   landExpansions: number; // 0: 12x12, 1: 14x14, 2: 16x16
   automation: AutomationState;
+  kalabawPlowLevel?: number; // 1: 3-tile furrow, 2: 5-tile furrow, 3: 3x3 square furrow
+  kalabawUnlocked?: boolean;
 }

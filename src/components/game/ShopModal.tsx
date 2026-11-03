@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CropType, GameState } from '../../types/game';
-import { CROPS } from '../../constants/gameData';
+import { CROPS, KALABAW_UPGRADES } from '../../constants/gameData';
 import { sound } from '../../services/audio';
 
 interface ShopModalProps {
@@ -10,6 +10,7 @@ interface ShopModalProps {
   onBuyItem: (itemKey: string, itemName: string, cost: number, category: string) => void;
   onOpenHouseCustomizer: () => void;
   onOpenAutomation: () => void;
+  onUpgradeKalabawPlow?: (nextTier: number, cost: number) => void;
 }
 
 export const ShopModal: React.FC<ShopModalProps> = ({
@@ -19,6 +20,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onBuyItem,
   onOpenHouseCustomizer,
   onOpenAutomation,
+  onUpgradeKalabawPlow,
 }) => {
   const [activeTab, setActiveTab] = useState<'seeds' | 'buildings' | 'animals' | 'decor'>('seeds');
 
@@ -36,13 +38,76 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   ];
 
   const animalsCatalog = [
-    { id: 'animal_carabao', name: 'Kalabaw (Water Buffalo)', cost: 380, icon: '🐃', produce: 'Rich Milk 🥛', desc: 'Hardworking Philippine water buffalo that plows fields and gives rich milk.', minLevel: 1 },
-    { id: 'animal_ostrich', name: 'Giant Ostrich', cost: 480, icon: '🪺', produce: 'Ostrich Egg 🪺', desc: 'Majestic bird producing massive eggs with rare golden egg variants.', minLevel: 2 },
-    { id: 'animal_rabbit', name: 'Angora Rabbit', cost: 220, icon: '🐇', produce: 'Angora Wool 🧶', desc: 'Fluffy country bunny yielding soft spun angora wool.', minLevel: 1 },
-    { id: 'animal_chicken', name: 'Heritage Chicken', cost: 120, icon: '🐔', produce: 'Eggs 🥚', desc: 'Produces fresh brown eggs daily.', minLevel: 1 },
-    { id: 'animal_cow', name: 'Jersey Dairy Cow', cost: 350, icon: '🐄', produce: 'Milk 🥛', desc: 'Gentle dairy cow providing rich milk.', minLevel: 2 },
-    { id: 'animal_sheep', name: 'Merino Sheep', cost: 280, icon: '🐑', produce: 'Wool 🧶', desc: 'Fluffy sheep for warm sweater wool.', minLevel: 2 },
-    { id: 'animal_dog', name: 'Golden Retriever', cost: 450, icon: '🐕', produce: 'Joy 💖', desc: 'Loyal farm dog that brings warmth & luck.', minLevel: 3 },
+    {
+      id: 'animal_chicken',
+      name: 'Heritage Chicken',
+      cost: 120,
+      icon: '🐔',
+      produce: 'Fresh Eggs 🥚',
+      desc: 'Heritage hen producing fresh eggs daily. +1 capacity unlocked every 3rd level (Lv 3, 6, 9...).',
+      minLevel: 3,
+      animalType: 'chicken',
+    },
+    {
+      id: 'animal_cow',
+      name: 'Jersey Dairy Cow',
+      cost: 450,
+      icon: '🐄',
+      produce: 'Creamy Milk 🥛',
+      desc: 'Gentle dairy cow providing creamy milk. +1 capacity unlocked every 10th level (Lv 10, 20, 30...).',
+      minLevel: 10,
+      animalType: 'cow',
+    },
+    {
+      id: 'animal_sheep',
+      name: 'Merino Sheep',
+      cost: 380,
+      icon: '🐑',
+      produce: 'Soft Wool 🧶',
+      desc: 'Fluffy Merino sheep for sweater wool. +1 capacity unlocked every 5th tier (Lv 15, 25, 35...).',
+      minLevel: 15,
+      animalType: 'sheep',
+    },
+    {
+      id: 'animal_carabao',
+      name: 'Kalabaw (Water Buffalo)',
+      cost: 50000,
+      icon: '🐃',
+      produce: 'Carabao Milk 🥛',
+      desc: 'Philippine workhorse! Plows multiple fields at once. Requires Level 20 & 50,000 Coins. Upgradable plow radius.',
+      minLevel: 20,
+      animalType: 'carabao',
+    },
+    {
+      id: 'animal_rabbit',
+      name: 'Angora Rabbit',
+      cost: 220,
+      icon: '🐇',
+      produce: 'Angora Wool 🧶',
+      desc: 'Fluffy country bunny yielding soft spun angora wool.',
+      minLevel: 2,
+      animalType: 'rabbit',
+    },
+    {
+      id: 'animal_ostrich',
+      name: 'Giant Ostrich',
+      cost: 520,
+      icon: '🪺',
+      produce: 'Ostrich Egg 🪺',
+      desc: 'Majestic bird producing massive eggs with rare golden egg variants.',
+      minLevel: 4,
+      animalType: 'ostrich',
+    },
+    {
+      id: 'animal_dog',
+      name: 'Golden Retriever',
+      cost: 450,
+      icon: '🐕',
+      produce: 'Joy & Luck 💖',
+      desc: 'Loyal farm dog that brings warmth & luck.',
+      minLevel: 3,
+      animalType: 'dog',
+    },
   ];
 
   const decorCatalog = [

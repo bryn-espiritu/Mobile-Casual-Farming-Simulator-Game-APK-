@@ -14,11 +14,10 @@ interface HUDProps {
   onOpenAutomation: () => void;
   onOpenCooking: () => void;
   onOpenLandExpansion: () => void;
+  onOpenLevelRoadmap: () => void;
   onAdvanceDay: () => void;
   onToggleTimeOfDay: () => void;
   onCycleWeather: () => void;
-  is3DMode?: boolean;
-  onToggle3DMode?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -32,17 +31,22 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenAutomation,
   onOpenCooking,
   onOpenLandExpansion,
+  onOpenLevelRoadmap,
   onAdvanceDay,
   onToggleTimeOfDay,
   onCycleWeather,
-  is3DMode = false,
-  onToggle3DMode,
 }) => {
   const xpNeeded = gameState.level * 100;
   const xpPercent = Math.min(100, Math.round((gameState.xp / xpNeeded) * 100));
 
   const pendingOrdersCount = gameState.orders.filter((o) => !o.completed).length;
   const uncompletedTasksCount = gameState.tasks.filter((t) => !t.claimed).length;
+
+  const soilCount = gameState.tiles.filter((t) => t.type === 'soil' || Boolean(t.crop)).length;
+  const maxFields = gameState.level * 3;
+
+  const isKusinaUnlocked = gameState.level >= 10;
+  const isAutoTechUnlocked = gameState.level >= 5;
 
   const weatherIcons: Record<WeatherType, { icon: string; name: string }> = {
     sunny: { icon: '☀️', name: 'Sunny' },
@@ -59,15 +63,32 @@ export const HUD: React.FC<HUDProps> = ({
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 sm:p-4">
       {/* Top Perimeter Status Cluster */}
       <div className="w-full flex items-start justify-between gap-2">
-        {/* Left: Farm Identity & Level XP */}
-        <div className="pointer-events-auto flex items-center gap-2.5 bg-slate-900/80 text-white rounded-2xl p-1.5 pr-4 border border-emerald-500/20 shadow-md">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-bold text-slate-950 text-base shadow-inner shrink-0">
-            {gameState.level}
-          </div>
+        {/* Left: Farm Identity, Level XP, & Stacked Field Limit */}
+        <div className="pointer-events-auto flex items-center gap-2.5 bg-slate-900/85 text-white rounded-2xl p-1.5 pr-4 border border-emerald-500/20 shadow-md">
+          <button
+            onClick={() => {
+              sound.playTap();
+              onOpenLevelRoadmap();
+            }}
+            title="Click to view Level Unlocks & Guide"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 flex flex-col items-center justify-center font-bold text-slate-950 text-sm shadow-inner shrink-0 cursor-pointer active:scale-95 transition-all group"
+          >
+            <span className="leading-none text-base font-extrabold">{gameState.level}</span>
+            <span className="text-[8px] uppercase tracking-tighter opacity-80 leading-none">LVL</span>
+          </button>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-slate-100 truncate max-w-[110px] sm:max-w-[150px]">
-              {gameState.farmName}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-100 truncate max-w-[110px] sm:max-w-[150px]">
+                {gameState.farmName}
+              </span>
+              {/* Stacked Field Limit Pill */}
+              <span
+                title={`Plowed fields: ${soilCount} / ${maxFields} max (${gameState.level} × 3 stacked)`}
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30"
+              >
+                🌱 {soilCount}/{maxFields}
+              </span>
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-16 sm:w-20 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
                 <div
@@ -174,38 +195,37 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Side Quick Actions on right thumb side */}
       <div className="pointer-events-none self-end flex flex-col gap-2 mb-20 sm:mb-24">
-        {/* 3D / 2D Farm Mode Toggle Button */}
-        {onToggle3DMode && (
-          <button
-            onClick={() => {
-              sound.playTap();
-              onToggle3DMode();
-            }}
-            className={`pointer-events-auto flex items-center gap-2 px-3 py-2 font-bold text-xs rounded-2xl shadow-lg border active:scale-95 transition-all cursor-pointer ${
-              is3DMode
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-cyan-300/50 shadow-cyan-500/25 ring-2 ring-cyan-400/40'
-                : 'bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border-cyan-500/30'
-            }`}
-            title="Toggle between 3D Farm & 2D Canvas"
-          >
-            <span className="text-base">{is3DMode ? '🌐' : '📐'}</span>
-            <span className="hidden sm:inline">{is3DMode ? '3D Farm' : '2D Farm'}</span>
-            <span className="text-[10px] uppercase font-mono px-1 rounded bg-black/40 text-cyan-200">
-              {is3DMode ? '3D' : '2D'}
-            </span>
-          </button>
-        )}
+        {/* Level Roadmap & Unlock Guide Button */}
+        <button
+          onClick={() => {
+            sound.playTap();
+            onOpenLevelRoadmap();
+          }}
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-2xl shadow-lg border border-amber-300/50 active:scale-95 transition-all cursor-pointer"
+          title="View Level Unlock Guide & Roadmap"
+        >
+          <span className="text-base">🏆</span>
+          <span className="hidden sm:inline">Guide</span>
+          <span className="text-[10px] uppercase font-mono px-1 rounded bg-black/30 text-amber-200">
+            Lv {gameState.level}
+          </span>
+        </button>
 
-        {/* Cooking Kusina Simulator Button */}
+        {/* Cooking Kusina Simulator Button (Unlocked at Level 10) */}
         <button
           onClick={() => {
             sound.playTap();
             onOpenCooking();
           }}
-          className="pointer-events-auto flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-2xl shadow-lg border border-orange-300/40 active:scale-95 transition-all cursor-pointer"
+          className={`pointer-events-auto flex items-center gap-2 px-3 py-2 font-bold text-xs rounded-2xl shadow-lg border active:scale-95 transition-all cursor-pointer ${
+            isKusinaUnlocked
+              ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white border-orange-300/40 shadow-orange-500/20'
+              : 'bg-slate-900/90 text-slate-400 border-slate-700/60 hover:text-slate-200'
+          }`}
+          title={isKusinaUnlocked ? 'Cook delicious recipes in Kusina' : 'Kusina unlocks at Farm Level 10!'}
         >
-          <span className="text-base">🍳</span>
-          <span className="hidden sm:inline">Kusina</span>
+          <span className="text-base">{isKusinaUnlocked ? '🍳' : '🔒'}</span>
+          <span className="hidden sm:inline">{isKusinaUnlocked ? 'Kusina' : 'Kusina (Lv 10)'}</span>
         </button>
 
         {/* Land Expansion Button */}
@@ -220,7 +240,7 @@ export const HUD: React.FC<HUDProps> = ({
           <span className="hidden sm:inline">Expand</span>
         </button>
 
-        {/* House Architecture & Furniture Customizer Button */}
+        {/* House Architecture & Furniture Customizer Button (3D Interior) */}
         <button
           onClick={() => {
             sound.playTap();
@@ -232,17 +252,22 @@ export const HUD: React.FC<HUDProps> = ({
           <span className="hidden sm:inline">Homestead</span>
         </button>
 
-        {/* Automation Hub Button */}
+        {/* Automation Hub Button (Unlocked at Level 5) */}
         <button
           onClick={() => {
             sound.playTap();
             onOpenAutomation();
           }}
-          className="pointer-events-auto relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold text-xs rounded-2xl shadow-lg border border-amber-300/40 active:scale-95 transition-all cursor-pointer"
+          className={`pointer-events-auto relative flex items-center gap-2 px-3 py-2 font-bold text-xs rounded-2xl shadow-lg border active:scale-95 transition-all cursor-pointer ${
+            isAutoTechUnlocked
+              ? 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-slate-950 border-amber-300/40'
+              : 'bg-slate-900/90 text-slate-400 border-slate-700/60 hover:text-slate-200'
+          }`}
+          title={isAutoTechUnlocked ? 'Configure automated machinery' : 'Auto Tech unlocks at Farm Level 5!'}
         >
-          <span className="text-base">⚙️</span>
-          <span className="hidden sm:inline">Auto Tech</span>
-          {(gameState.automation?.autoHarvestEnabled || gameState.automation?.autoPlantEnabled || gameState.automation?.autoFeedEnabled) && (
+          <span className="text-base">{isAutoTechUnlocked ? '⚙️' : '🔒'}</span>
+          <span className="hidden sm:inline">{isAutoTechUnlocked ? 'Auto Tech' : 'Auto Tech (Lv 5)'}</span>
+          {isAutoTechUnlocked && (gameState.automation?.autoHarvestEnabled || gameState.automation?.autoPlantEnabled || gameState.automation?.autoFeedEnabled) && (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
           )}
         </button>

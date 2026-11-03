@@ -830,32 +830,318 @@ export const FURNITURE_SWATCHES = [
 export const HOUSE_LEVELS = [
   {
     level: 1,
-    name: 'Cozy Timber Cabin',
+    name: 'Cozy Bahay Kubo Cabin',
     upgradeCost: 0,
     gemCost: 0,
     maxFurniture: 6,
-    perk: 'Humble starter home with warm stone hearth and open studio layout.',
+    perk: 'Traditional bamboo nipa hut with open studio layout and warm stone hearth.',
     minFarmLevel: 1,
   },
   {
     level: 2,
-    name: 'Pastoral Country Manor',
-    upgradeCost: 600,
-    gemCost: 15,
+    name: '2-Storey Heritage Bahay na Bato',
+    upgradeCost: 1800,
+    gemCost: 20,
     maxFurniture: 12,
-    perk: 'Expanded 2-story home with dormer windows, flower boxes, and +15% crop sell value.',
-    minFarmLevel: 2,
+    perk: 'Sturdy 2-storey stone and mahogany estate with capiz shell windows and +15% crop sell value.',
+    minFarmLevel: 10,
   },
   {
     level: 3,
-    name: 'Grand Valley Estate',
-    upgradeCost: 1500,
-    gemCost: 35,
-    maxFurniture: 24,
-    perk: 'Victorian wrap-around porch, stained glass lanterns, and +25% experience on all harvests.',
-    minFarmLevel: 4,
+    name: 'Modernized Farmhouse Villa',
+    upgradeCost: 6500,
+    gemCost: 45,
+    maxFurniture: 18,
+    perk: 'Sleek contemporary design with floor-to-ceiling glass, solar roof, and +25% experience bonus.',
+    minFarmLevel: 20,
+  },
+  {
+    level: 4,
+    name: '3-Storey Luxury Estate with Garage',
+    upgradeCost: 22000,
+    gemCost: 90,
+    maxFurniture: 26,
+    perk: '3 spacious floors, covered garage with pickup truck, and +35% bonus coins on all town orders.',
+    minFarmLevel: 35,
+  },
+  {
+    level: 5,
+    name: 'Sprawling Tropical Bungalow',
+    upgradeCost: 60000,
+    gemCost: 160,
+    maxFurniture: 36,
+    perk: 'Spacious single-level open floor plan, lanai veranda, and double harvest chance on all crops.',
+    minFarmLevel: 50,
+  },
+  {
+    level: 6,
+    name: 'Grand Naga Hacienda Mansion',
+    upgradeCost: 150000,
+    gemCost: 350,
+    maxFurniture: 50,
+    perk: 'Palatial hacienda mansion with grand balcony, courtyard fountain, and permanent royal farm aura.',
+    minFarmLevel: 100,
   },
 ];
+
+export const KALABAW_UPGRADES = [
+  {
+    level: 1,
+    name: 'Loyal Furrow Plow',
+    cost: 0,
+    coinsReq: 50000,
+    minLevel: 20,
+    radius: 3,
+    shape: 'line',
+    desc: 'Simultaneously plows 3 linear furrow plots in one swift motion.',
+  },
+  {
+    level: 2,
+    name: 'Reinforced Bronze Harness',
+    cost: 15000,
+    gems: 25,
+    minLevel: 25,
+    radius: 5,
+    shape: 'line',
+    desc: 'Expands plowing reach to 5 linear furrow plots simultaneously.',
+  },
+  {
+    level: 3,
+    name: 'Golden Master Yoke',
+    cost: 35000,
+    gems: 60,
+    minLevel: 30,
+    radius: 9,
+    shape: 'square',
+    desc: 'Supreme 3x3 square grid plow, cultivating 9 fields in a single thunderous charge!',
+  },
+];
+
+export interface LevelUnlockInfo {
+  level: number;
+  title: string;
+  badge: string;
+  perks: Array<{ icon: string; name: string; instruction: string }>;
+}
+
+export const LEVEL_UNLOCK_ROADMAP: Record<number, LevelUnlockInfo> = {
+  1: {
+    level: 1,
+    title: 'Welcome to Naga Farm!',
+    badge: 'Starter Farmer',
+    perks: [
+      { icon: '⛏️', name: 'Field Limit: 3 Plots', instruction: 'You can maintain up to 3 plowed soil fields (3 per level stacked). Use the ⛏️ Plow tool to till grass.' },
+      { icon: '🌱', name: 'Planting & Hydration', instruction: 'Select seeds from your bottom toolbar to plant into empty soil. Water them for 2x growth speed.' },
+      { icon: '🏡', name: 'Homestead Studio', instruction: 'Tap your Bahay Kubo to enter the 3D room customizer and place comfortable furniture!' },
+    ],
+  },
+  2: {
+    level: 2,
+    title: 'Sweet Harvests Ahead!',
+    badge: 'Novice Planter',
+    perks: [
+      { icon: '⛏️', name: '+3 Field Plots (6 Total)', instruction: 'Your plow limit is stacked! You can now maintain up to 6 fields on the farm.' },
+      { icon: '🍓', name: 'Sweet Strawberries Unlocked', instruction: 'Available in the Farm Shop! Yields ruby strawberries with chance of rare Sugar Heart Drops.' },
+    ],
+  },
+  3: {
+    level: 3,
+    title: 'Poultry & Chickens Unlocked!',
+    badge: 'Poultry Keeper',
+    perks: [
+      { icon: '🐔', name: 'Heritage Chicken Unlocked', instruction: 'Chickens unlock every 3rd level! Visit the Farm Shop > Livestock to adopt your first hen for fresh eggs.' },
+      { icon: '⛏️', name: '+3 Field Plots (9 Total)', instruction: 'Your field capacity stacked to 9 plots.' },
+      { icon: '🏡', name: 'Guest Cottage', instruction: 'New architectural blueprints available in the shop.' },
+    ],
+  },
+  4: {
+    level: 4,
+    title: 'Golden Sweet Corn!',
+    badge: 'Field Harvester',
+    perks: [
+      { icon: '🌽', name: 'Crisp Sweet Corn Seeds', instruction: 'Now purchasable in the Shop! Grows tall stalks producing golden cobs and rare Glass Gem variants.' },
+      { icon: '⛏️', name: '+3 Field Plots (12 Total)', instruction: 'Plowing allowance expanded to 12 fields.' },
+    ],
+  },
+  5: {
+    level: 5,
+    title: 'Auto Tech Automation Hub!',
+    badge: 'Tech Pioneer',
+    perks: [
+      { icon: '⚙️', name: 'Auto Tech Hub Unlocked!', instruction: 'Tap the ⚙️ Auto Tech button on the HUD! Purchase automatic harvesters, seeders, sprinklers, and animal feeders to run your farm hands-free.' },
+      { icon: '⛏️', name: '+3 Field Plots (15 Total)', instruction: 'Plow capacity stacked to 15 fields.' },
+      { icon: '🥕', name: 'Crisp Carrots', instruction: 'Carrot seeds now available in the General Store.' },
+    ],
+  },
+  6: {
+    level: 6,
+    title: 'Expanded Poultry Flock!',
+    badge: 'Flock Tender',
+    perks: [
+      { icon: '🐔', name: '+1 Chicken Slot (2 Total)', instruction: 'Adopt another Heritage Chicken in the Farm Shop (every 3rd level).' },
+      { icon: '⛏️', name: '+3 Field Plots (18 Total)', instruction: 'Maximum fields increased to 18.' },
+    ],
+  },
+  7: {
+    level: 7,
+    title: 'Sunflowers & Honey!',
+    badge: 'Sun Blossom',
+    perks: [
+      { icon: '🌻', name: 'Radiant Sunflowers', instruction: 'Bright blossoms now available in store. Attracts golden bees and yields Sunfire drops.' },
+      { icon: '⛏️', name: '+3 Field Plots (21 Total)', instruction: 'Stack your field capacity to 21 plots.' },
+    ],
+  },
+  8: {
+    level: 8,
+    title: 'Palaisdaan Aquaculture!',
+    badge: 'Fisherman',
+    perks: [
+      { icon: '🐟', name: 'Palaisdaan Fish Pond Stock', instruction: 'Tap your fish pond to catch fresh Bangus (Milkfish) and River Tilapia with rare catches!' },
+      { icon: '⛏️', name: '+3 Field Plots (24 Total)', instruction: 'Stack up to 24 field plots.' },
+    ],
+  },
+  9: {
+    level: 9,
+    title: 'Master Poultry Flock!',
+    badge: 'Poultry Master',
+    perks: [
+      { icon: '🐔', name: '+1 Chicken Slot (3 Total)', instruction: 'Another chicken slot unlocked in the shop (every 3rd level).' },
+      { icon: '⛏️', name: '+3 Field Plots (27 Total)', instruction: 'Stack up to 27 fields across your homestead.' },
+    ],
+  },
+  10: {
+    level: 10,
+    title: 'Kusina & 2-Storey House!',
+    badge: 'Homestead Master',
+    perks: [
+      { icon: '🍳', name: 'Kusina Cookhouse Unlocked!', instruction: 'Tap 🍳 Kusina on the HUD! Cook delicious Filipino recipes (Sinigang, Adobo, Inihaw na Tilapia) for powerful coin & growth buffs with a 4s cooking simulation!' },
+      { icon: '🏡', name: '2-Storey House Upgrade Available!', instruction: 'Visit Homestead > Architecture to upgrade to a 2-Storey Bahay na Bato with 12 furniture capacity and +15% crop value.' },
+      { icon: '🐄', name: 'Jersey Dairy Cow Unlocked!', instruction: 'Cows unlock every 10 levels! Adopt your first dairy cow in the shop for rich milk.' },
+      { icon: '⛏️', name: '+3 Field Plots (30 Total)', instruction: 'Plow capacity now stacked up to 30 fields.' },
+    ],
+  },
+  15: {
+    level: 15,
+    title: 'Merino Sheep & Wool!',
+    badge: 'Shepherd',
+    perks: [
+      { icon: '🐑', name: 'Merino Sheep Unlocked!', instruction: 'Sheep unlock every 5th tier (15, 25, 35...)! Adopt your first fluffy sheep in the shop for valuable wool and golden fleece.' },
+      { icon: '🐔', name: '+1 Chicken Slot (5 Total)', instruction: 'More chickens available in the shop.' },
+      { icon: '⛏️', name: '+3 Field Plots (45 Total)', instruction: 'Stack up to 45 fields on your farm.' },
+    ],
+  },
+  20: {
+    level: 20,
+    title: 'Kalabaw & Modernized Villa!',
+    badge: 'Agrarian Elite',
+    perks: [
+      { icon: '🐃', name: 'Kalabaw (Water Buffalo) Unlocked!', instruction: 'Available at Level 20 with 50,000 Coins! Select the 🐃 Kalabaw tool in the toolbar to plow multiple furrow plots simultaneously. Upgradable for wider radii!' },
+      { icon: '🏡', name: 'Modernized House Upgrade Available!', instruction: 'Transform your home into a sleek Modern Farmhouse Villa with 18 furniture capacity and +25% experience bonus!' },
+      { icon: '🐄', name: '+1 Cow Slot (2 Total)', instruction: 'Adopt another dairy cow in the shop (every 10th level).' },
+      { icon: '⛏️', name: '+3 Field Plots (60 Total)', instruction: 'Stack up to 60 fields.' },
+    ],
+  },
+  25: {
+    level: 25,
+    title: 'Master Shepherd!',
+    badge: 'Wool Baron',
+    perks: [
+      { icon: '🐑', name: '+1 Sheep Slot (2 Total)', instruction: 'New sheep slot unlocked at level 25 (every 5th tier).' },
+      { icon: '⛏️', name: '+3 Field Plots (75 Total)', instruction: 'Stack up to 75 fields.' },
+    ],
+  },
+  30: {
+    level: 30,
+    title: 'Dairy Tycoon!',
+    badge: 'Dairy Tycoon',
+    perks: [
+      { icon: '🐄', name: '+1 Cow Slot (3 Total)', instruction: 'New cow slot unlocked at level 30 (every 10th tier).' },
+      { icon: '⛏️', name: '+3 Field Plots (90 Total)', instruction: 'Stack up to 90 fields.' },
+    ],
+  },
+  35: {
+    level: 35,
+    title: '3-Storey House with Garage!',
+    badge: 'Estate Patriarch',
+    perks: [
+      { icon: '🏡', name: '3-Storey House with Garage Upgrade!', instruction: 'Upgrade your home to a 3-storey luxury estate with private garage, 26 furniture slots, and +35% order bonuses!' },
+      { icon: '🐑', name: '+1 Sheep Slot (3 Total)', instruction: 'New sheep slot unlocked at level 35.' },
+      { icon: '⛏️', name: '+3 Field Plots (105 Total)', instruction: 'Plow capacity stacked to 105 plots.' },
+    ],
+  },
+  50: {
+    level: 50,
+    title: 'Decent Bungalow Estate!',
+    badge: 'Haciendero',
+    perks: [
+      { icon: '🏡', name: 'Decent Bungalow House Upgrade!', instruction: 'Upgrade to a sprawling luxury tropical bungalow with lanai veranda, 36 furniture capacity, and double harvest chance!' },
+      { icon: '⛏️', name: '+3 Field Plots (150 Total)', instruction: 'Plow capacity stacked to 150 fields.' },
+    ],
+  },
+  100: {
+    level: 100,
+    title: 'Grand Naga Hacienda Mansion!',
+    badge: 'Legendary Hacienda Master',
+    perks: [
+      { icon: '🏰', name: 'Grand Mansion Upgrade!', instruction: 'The ultimate royal estate! 50 furniture slots, palatial courtyard fountain, and permanent royal farm boost!' },
+      { icon: '⛏️', name: '+3 Field Plots (300 Total)', instruction: 'Cultivate up to 300 fields.' },
+    ],
+  },
+};
+
+export function getLevelUnlockInfo(level: number): LevelUnlockInfo {
+  if (LEVEL_UNLOCK_ROADMAP[level]) {
+    return LEVEL_UNLOCK_ROADMAP[level];
+  }
+  const perks = [
+    {
+      icon: '⛏️',
+      name: `+3 Field Plots (${level * 3} Total)`,
+      instruction: `Your plowing limit is stacked! You can now cultivate up to ${level * 3} fields across Naga Farm.`,
+    },
+  ];
+  if (level % 3 === 0) {
+    perks.push({
+      icon: '🐔',
+      name: `+1 Chicken Capacity (${Math.floor(level / 3)} Total)`,
+      instruction: 'Chicken capacity expands every 3rd level! Visit the Farm Shop > Livestock to adopt another chicken.',
+    });
+  }
+  if (level % 10 === 0) {
+    perks.push({
+      icon: '🐄',
+      name: `+1 Dairy Cow Capacity (${Math.floor(level / 10)} Total)`,
+      instruction: 'Cow capacity expands every 10th level! Visit the Farm Shop > Livestock to adopt another dairy cow.',
+    });
+  }
+  if (level >= 15 && (level - 15) % 10 === 0) {
+    perks.push({
+      icon: '🐑',
+      name: `+1 Merino Sheep Capacity (${1 + Math.floor((level - 15) / 10)} Total)`,
+      instruction: 'Sheep capacity expands every 5th tier (15, 25, 35...)! Visit the Farm Shop > Livestock to adopt another sheep.',
+    });
+  }
+  if (level >= 5 && level < 10) {
+    perks.push({
+      icon: '⚙️',
+      name: 'Auto Tech Maintenance',
+      instruction: 'Upgrade your auto-harvester, seed drill, or animal groomer in the Auto Tech Hub.',
+    });
+  }
+  if (level >= 10) {
+    perks.push({
+      icon: '🍳',
+      name: 'Kusina Recipes',
+      instruction: 'Cook gourmet Filipino dishes with high coin & growth buffs in the Kusina Cookhouse.',
+    });
+  }
+  return {
+    level,
+    title: `Level ${level} Master Planter!`,
+    badge: `Level ${level} Farmer`,
+    perks,
+  };
+}
 
 export const AUTOMATION_TIERS = {
   autoHarvest: [
