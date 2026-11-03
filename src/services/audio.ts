@@ -238,14 +238,14 @@ class SoundService {
         osc.frequency.exponentialRampToValueAtTime(75, now + 0.35);
         gain.gain.setValueAtTime(0.18, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-      } else if (animalType === 'ostrich') {
+      } else if (type === 'ostrich') {
         // Ostrich deep hollow boom / trill
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(180, now);
         osc.frequency.exponentialRampToValueAtTime(110, now + 0.28);
         gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-      } else if (animalType === 'rabbit') {
+      } else if (type === 'rabbit') {
         // Cute bunny hop squeak
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);

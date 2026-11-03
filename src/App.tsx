@@ -511,22 +511,23 @@ export default function App() {
         const cropDef = CROPS[cropType];
         const hasDoubleHarvest = gameState.activeBuff?.type === 'double_harvest' && gameState.activeBuff.expiresAt > Date.now();
         const rareDrop = getRareHarvestDrop(cropType, hasDoubleHarvest);
-        const isRare = rareDrop.rarity !== 'common';
+        const isRare = Boolean(rareDrop && rareDrop.rarity !== 'common');
 
         const coinBuff = gameState.activeBuff?.type === 'coin_boost' && gameState.activeBuff.expiresAt > Date.now() ? 1.5 : 1.0;
         const bonus = gameState.house?.level >= 2 ? 1.15 : 1.0;
-        const revenue = Math.round(cropDef.sellPrice * rareDrop.multiplier * bonus * coinBuff);
+        const multiplier = rareDrop ? rareDrop.multiplier : 1;
+        const revenue = Math.round(cropDef.sellPrice * multiplier * bonus * coinBuff);
         const earnedXP = Math.round(cropDef.xpYield * (isRare ? 2.5 : 1));
         const harvestQuantity = hasDoubleHarvest ? 2 : 1;
 
         setGameState((prev) => {
           const currentCount = prev.inventory[cropType] ?? 0;
-          const rareCount = rareDrop.itemKey ? (prev.inventory[rareDrop.itemKey] ?? 0) : 0;
+          const rareCount = rareDrop ? (prev.inventory[rareDrop.itemKey] ?? 0) : 0;
           const newInv: Record<string, number> = {
             ...prev.inventory,
             [cropType]: currentCount + harvestQuantity,
           };
-          if (rareDrop.itemKey) {
+          if (rareDrop) {
             newInv[rareDrop.itemKey] = rareCount + 1;
           }
 
@@ -540,7 +541,7 @@ export default function App() {
           };
         });
 
-        if (isRare) {
+        if (rareDrop && (rareDrop.rarity === 'rare' || rareDrop.rarity === 'epic' || rareDrop.rarity === 'legendary')) {
           sound.playRareHarvest(rareDrop.rarity);
           setToastMessage({
             id: `rare_${Date.now()}`,
@@ -616,7 +617,7 @@ export default function App() {
             if (collectedProduce) {
               const hasDoubleHarvest = prev.activeBuff?.type === 'double_harvest' && prev.activeBuff.expiresAt > Date.now();
               const drop = getRareHarvestDrop(collectedProduce, hasDoubleHarvest);
-              if (drop.rarity !== 'common') {
+              if (drop && drop.rarity !== 'common') {
                 rareItem = drop.itemKey;
                 rareRarity = drop.rarity;
                 rareName = drop.name;
@@ -686,11 +687,12 @@ export default function App() {
 
       const hasDoubleHarvest = gameState.activeBuff?.type === 'double_harvest' && gameState.activeBuff.expiresAt > Date.now();
       const rareDrop = getRareHarvestDrop(fishItem, hasDoubleHarvest);
-      const isRare = rareDrop.rarity !== 'common';
-      const fishCoinVal = Math.round(baseCoinVal * (isRare ? rareDrop.multiplier : 1));
+      const isRare = Boolean(rareDrop && rareDrop.rarity !== 'common');
+      const multiplier = rareDrop ? rareDrop.multiplier : 1;
+      const fishCoinVal = Math.round(baseCoinVal * multiplier);
 
       sound.playFishCatch();
-      if (isRare) {
+      if (rareDrop && (rareDrop.rarity === 'rare' || rareDrop.rarity === 'epic' || rareDrop.rarity === 'legendary')) {
         sound.playRareHarvest(rareDrop.rarity);
         setToastMessage({
           id: `rare_fish_${Date.now()}`,
@@ -707,7 +709,7 @@ export default function App() {
         inventory: {
           ...prev.inventory,
           [fishItem]: (prev.inventory[fishItem] ?? 0) + 1,
-          ...(rareDrop.itemKey ? { [rareDrop.itemKey]: (prev.inventory[rareDrop.itemKey] ?? 0) + 1 } : {}),
+          ...(rareDrop ? { [rareDrop.itemKey]: (prev.inventory[rareDrop.itemKey] ?? 0) + 1 } : {}),
         },
       }));
       addXP(isRare ? 50 : 25);
@@ -1303,10 +1305,34 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenHouseCustomizer={() => setIsHouseCustomizerOpen(true)}
           onOpenAutomation={() => setIsAutomationOpen(true)}
+          onOpenCooking={() => setIsCookingOpen(true)}
+          onOpenLandExpansion={() => setIsLandExpansionOpen(true)}
           onAdvanceDay={handleAdvanceDay}
           onToggleTimeOfDay={handleToggleTimeOfDay}
           onCycleWeather={handleCycleWeather}
         />
+
+        {/* Floating Toast Notification Banner */}
+        {toastMessage && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-[90vw] pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300">
+            <div
+              className={`px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-md border text-center transition-all ${
+                toastMessage.rarity === 'legendary'
+                  ? 'bg-amber-950/90 border-amber-400 text-amber-200 shadow-amber-500/30'
+                  : toastMessage.rarity === 'epic'
+                  ? 'bg-purple-950/90 border-purple-400 text-purple-200 shadow-purple-500/30'
+                  : toastMessage.rarity === 'rare'
+                  ? 'bg-sky-950/90 border-sky-400 text-sky-200 shadow-sky-500/30'
+                  : 'bg-slate-900/90 border-emerald-500/40 text-emerald-200 shadow-emerald-500/20'
+              }`}
+            >
+              <div className="font-bold text-xs sm:text-sm tracking-wide">{toastMessage.text}</div>
+              {toastMessage.subtext && (
+                <div className="text-[11px] opacity-90 font-medium mt-0.5">{toastMessage.subtext}</div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Bottom Thumb Toolbar */}
         <ToolBar
@@ -1316,6 +1342,7 @@ export default function App() {
           onSelectSeed={(seed) => setGameState((prev) => ({ ...prev, selectedSeed: seed }))}
           inventory={gameState.inventory}
           onOpenShop={() => setIsShopOpen(true)}
+          season={gameState.season}
         />
       </div>
     );
@@ -1396,6 +1423,28 @@ export default function App() {
           onClose={() => setIsAutomationOpen(false)}
           onToggleAutomation={handleToggleAutomation}
           onUpgradeAutomation={handleUpgradeAutomation}
+        />
+      )}
+
+      {isCookingOpen && (
+        <CookingModal
+          gameState={gameState}
+          onClose={() => setIsCookingOpen(false)}
+          onCookRecipe={handleCookRecipe}
+          onEatDish={handleEatDish}
+        />
+      )}
+
+      {isLandExpansionOpen && (
+        <LandExpansionModal
+          gameState={gameState}
+          onClose={() => setIsLandExpansionOpen(false)}
+          onExpandLand={handleExpandLand}
+          onUpgradeBarn={handleUpgradeBarn}
+          onOpenHouseCustomizer={() => {
+            setIsLandExpansionOpen(false);
+            setIsHouseCustomizerOpen(true);
+          }}
         />
       )}
 

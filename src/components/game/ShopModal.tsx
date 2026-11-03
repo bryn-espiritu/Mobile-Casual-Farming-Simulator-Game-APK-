@@ -149,6 +149,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 const seedKey = `seed_${type}`;
                 const owned = gameState.inventory[seedKey] ?? 0;
                 const inSeason = crop.allowedSeasons ? crop.allowedSeasons.includes(gameState.season) : true;
+                const canAfford = gameState.coins >= crop.seedCost;
 
                 return (
                   <div
