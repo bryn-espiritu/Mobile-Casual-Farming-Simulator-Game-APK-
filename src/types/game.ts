@@ -182,17 +182,33 @@ export interface PlacedFurniture {
   name: string;
   category: string;
   icon: string;
-  x: number; // 0 to 5 room grid
-  y: number; // 0 to 5 room grid
-  color?: string;
+  x: number; // 0 to room grid max
+  y: number; // 0 to room grid max
+  rotation?: number; // 0, 90, 180, 270 degrees
+  color?: string; // hex color or custom tint
+  swatchName?: string; // Material swatch label (e.g. 'Golden Teak', 'Narra Mahogany')
+}
+
+export interface HousePainting {
+  id: string;
+  title: string;
+  artist: string;
+  era: string;
+  description: string;
+  icon: string;
+  previewGradient: string;
+  frameStyle: 'gold_baroque' | 'rustic_teak' | 'carved_narra' | 'modern_brass';
+  comfortBonus: number;
+  cost: number;
 }
 
 export interface HouseCustomization {
   level: number; // 1: Cozy Cabin, 2: Country Manor, 3: Grand Estate
   exteriorColor: string;
   roofColor: string;
-  wallStyle: string;
-  flooring: string;
+  wallStyle: string; // wallpaper style
+  wallPainting?: string; // selected wall painting/artwork ID
+  flooring: string; // flooring style
   placedFurniture: PlacedFurniture[];
 }
 

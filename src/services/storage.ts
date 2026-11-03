@@ -56,12 +56,13 @@ export function getDefaultGameState(): GameState {
       exteriorColor: '#b91c1c',
       roofColor: '#450a0a',
       wallStyle: 'cream_plaster',
+      wallPainting: 'amorsolo_rice',
       flooring: 'hardwood_oak',
       placedFurniture: [
-        { id: 'furn_init_1', furnitureId: 'stone_hearth', name: 'Stone Fireplace', category: 'hearth', icon: '🔥', x: 2, y: 0, color: '#eab308' },
-        { id: 'furn_init_2', furnitureId: 'rocking_chair', name: 'Oak Rocker', category: 'seating', icon: '🪑', x: 1, y: 2, color: '#d97706' },
-        { id: 'furn_init_3', furnitureId: 'country_rug', name: 'Braided Wool Rug', category: 'rugs', icon: '🧶', x: 2, y: 2, color: '#ec4899' },
-        { id: 'furn_init_4', furnitureId: 'plant_fig', name: 'Potted Fiddle Leaf', category: 'plants', icon: '🪴', x: 4, y: 0, color: '#22c55e' },
+        { id: 'furn_init_1', furnitureId: 'stone_hearth', name: 'Stone Fireplace', category: 'hearth', icon: '🔥', x: 2, y: 0, rotation: 0, color: '#eab308', swatchName: 'Golden Teak' },
+        { id: 'furn_init_2', furnitureId: 'rocking_chair', name: 'Oak Rocker', category: 'seating', icon: '🪑', x: 1, y: 2, rotation: 0, color: '#d97706', swatchName: 'Golden Teak' },
+        { id: 'furn_init_3', furnitureId: 'country_rug', name: 'Braided Wool Rug', category: 'rugs', icon: '🧶', x: 2, y: 2, rotation: 0, color: '#ec4899', swatchName: 'Ruby Crimson' },
+        { id: 'furn_init_4', furnitureId: 'plant_fig', name: 'Potted Fiddle Leaf', category: 'plants', icon: '🪴', x: 4, y: 0, rotation: 0, color: '#22c55e', swatchName: 'Emerald Velvet' },
       ],
     },
     automation: {

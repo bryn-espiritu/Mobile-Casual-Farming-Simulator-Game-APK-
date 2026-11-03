@@ -31,6 +31,7 @@ import { loadSavedGameState, saveGameState, getDefaultGameState, clearSavedGameS
 import { sound } from './services/audio';
 import { TitleScreen } from './components/game/TitleScreen';
 import { IsometricCanvas } from './components/game/IsometricCanvas';
+import { Farm3DCanvas } from './components/game/Farm3DCanvas';
 import { HUD } from './components/game/HUD';
 import { ToolBar } from './components/game/ToolBar';
 import { ShopModal } from './components/game/ShopModal';
@@ -47,6 +48,7 @@ import { LandExpansionModal } from './components/game/LandExpansionModal';
 export default function App() {
   const [screen, setScreen] = useState<'TITLE' | 'PLAYING'>('TITLE');
   const [gameState, setGameState] = useState<GameState>(() => loadSavedGameState());
+  const [is3DMode, setIs3DMode] = useState(false);
 
   // Modal Dialogs
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -1045,7 +1047,7 @@ export default function App() {
     }));
   }, []);
 
-  // Furniture Placement
+  // Furniture Placement (Sims-style placement)
   const handlePlaceFurniture = useCallback((
     furnitureId: string,
     name: string,
@@ -1053,7 +1055,10 @@ export default function App() {
     icon: string,
     x: number,
     y: number,
-    cost: number
+    cost: number,
+    rotation: number = 0,
+    color: string = '#d97706',
+    swatchName: string = 'Golden Teak'
   ) => {
     setGameState((prev) => {
       if (prev.coins < cost) return prev;
@@ -1067,6 +1072,9 @@ export default function App() {
           icon,
           x,
           y,
+          rotation,
+          color,
+          swatchName,
         },
       ];
 
@@ -1081,8 +1089,96 @@ export default function App() {
     });
   }, []);
 
+  // Move Furniture (Sims-style repositioning)
+  const handleMoveFurniture = useCallback((placedId: string, newX: number, newY: number) => {
+    sound.playMoveFurniture();
+    setGameState((prev) => {
+      const isOccupied = prev.house.placedFurniture.some((f) => f.id !== placedId && f.x === newX && f.y === newY);
+      if (isOccupied) return prev;
+
+      return {
+        ...prev,
+        house: {
+          ...prev.house,
+          placedFurniture: prev.house.placedFurniture.map((f) =>
+            f.id === placedId ? { ...f, x: newX, y: newY } : f
+          ),
+        },
+      };
+    });
+  }, []);
+
+  // Rotate Furniture (Sims-style 90° rotation)
+  const handleRotateFurniture = useCallback((placedId: string) => {
+    sound.playRotate();
+    setGameState((prev) => ({
+      ...prev,
+      house: {
+        ...prev.house,
+        placedFurniture: prev.house.placedFurniture.map((f) => {
+          if (f.id === placedId) {
+            const nextRotation = (((f.rotation || 0) + 90) % 360);
+            return { ...f, rotation: nextRotation };
+          }
+          return f;
+        }),
+      },
+    }));
+  }, []);
+
+  // Customize Furniture Material / Swatch Color
+  const handleCustomizeFurnitureSwatch = useCallback((placedId: string, color: string, swatchName: string) => {
+    sound.playPaintApply();
+    setGameState((prev) => ({
+      ...prev,
+      house: {
+        ...prev.house,
+        placedFurniture: prev.house.placedFurniture.map((f) =>
+          f.id === placedId ? { ...f, color, swatchName } : f
+        ),
+      },
+    }));
+  }, []);
+
+  // Change Wallpaper & Floor style
+  const handleUpdateWallAndFloor = useCallback((wallStyle: string, flooring: string) => {
+    sound.playPaintApply();
+    setGameState((prev) => ({
+      ...prev,
+      house: {
+        ...prev.house,
+        wallStyle,
+        flooring,
+      },
+    }));
+  }, []);
+
+  // Change House Painting ("change the painting of my Home")
+  const handleChangeHousePainting = useCallback((paintingId: string, cost: number) => {
+    setGameState((prev) => {
+      if (prev.coins < cost) return prev;
+      sound.playPaintApply();
+      setToastMessage({
+        id: `painting_${Date.now()}`,
+        text: `🖼️ Masterpiece Hung!`,
+        subtext: `Your homestead wall is now adorned with fine art.`,
+        rarity: 'epic',
+      });
+      return {
+        ...prev,
+        coins: prev.coins - cost,
+        house: {
+          ...prev.house,
+          wallPainting: paintingId,
+        },
+      };
+    });
+    addXP(35);
+  }, [addXP]);
+
   // Furniture Removal
   const handleRemoveFurniture = useCallback((placedId: string) => {
+    sound.playTap();
     setGameState((prev) => ({
       ...prev,
       house: {
@@ -1284,16 +1380,28 @@ export default function App() {
 
     return (
       <div className="relative w-full h-full overflow-hidden select-none">
-        {/* 60fps Isometric Canvas */}
-        <IsometricCanvas
-          gameState={gameState}
-          onTileAction={handleTileAction}
-          onAnimalPet={handleAnimalPet}
-          onStructureClick={handleStructureClick}
-          movingTile={movingTile}
-          onPlaceMovedTile={handlePlaceMovedTile}
-          onCancelMove={() => setMovingTile(null)}
-        />
+        {/* Farm View: 3D Three.js Mode or 60fps 2D Isometric Canvas */}
+        {is3DMode ? (
+          <Farm3DCanvas
+            gameState={gameState}
+            onTileAction={handleTileAction}
+            onAnimalPet={handleAnimalPet}
+            onStructureClick={handleStructureClick}
+            movingTile={movingTile}
+            onPlaceMovedTile={handlePlaceMovedTile}
+            onCancelMove={() => setMovingTile(null)}
+          />
+        ) : (
+          <IsometricCanvas
+            gameState={gameState}
+            onTileAction={handleTileAction}
+            onAnimalPet={handleAnimalPet}
+            onStructureClick={handleStructureClick}
+            movingTile={movingTile}
+            onPlaceMovedTile={handlePlaceMovedTile}
+            onCancelMove={() => setMovingTile(null)}
+          />
+        )}
 
         {/* Low-Occlusion HUD */}
         <HUD
@@ -1310,6 +1418,8 @@ export default function App() {
           onAdvanceDay={handleAdvanceDay}
           onToggleTimeOfDay={handleToggleTimeOfDay}
           onCycleWeather={handleCycleWeather}
+          is3DMode={is3DMode}
+          onToggle3DMode={() => setIs3DMode(!is3DMode)}
         />
 
         {/* Floating Toast Notification Banner */}
@@ -1413,7 +1523,12 @@ export default function App() {
           onUpgradeHouseLevel={handleUpgradeHouseLevel}
           onUpdateColors={handleUpdateHouseColors}
           onPlaceFurniture={handlePlaceFurniture}
+          onMoveFurniture={handleMoveFurniture}
+          onRotateFurniture={handleRotateFurniture}
+          onCustomizeFurnitureSwatch={handleCustomizeFurnitureSwatch}
           onRemoveFurniture={handleRemoveFurniture}
+          onChangeHousePainting={handleChangeHousePainting}
+          onUpdateWallAndFloor={handleUpdateWallAndFloor}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { CropDefinition, CropType, FarmTile, SeasonalTask, TownOrder, Season, CookingRecipe, ItemRarity } from '../types/game';
+import { CropDefinition, CropType, FarmTile, SeasonalTask, TownOrder, Season, CookingRecipe, ItemRarity, HousePainting } from '../types/game';
 
 export const GRID_SIZE = 12; // 12x12 initial isometric grid
 
@@ -675,18 +675,156 @@ export const FURNITURE_CATALOG = [
   { id: 'stone_hearth', name: 'Rustic Stone Hearth', category: 'hearth' as const, cost: 180, icon: '🔥', description: 'Crackling warm wood fire that keeps rooms toasty.', comfortBonus: 20 },
   { id: 'iron_stove', name: 'Cast-Iron Wood Stove', category: 'hearth' as const, cost: 140, icon: '🪵', description: 'Traditional country heating stove with teapot.', comfortBonus: 15 },
   { id: 'rocking_chair', name: 'Hand-Carved Rocker', category: 'seating' as const, cost: 95, icon: '🪑', description: 'Cozy curved wooden rocking chair for afternoon naps.', comfortBonus: 12 },
-  { id: 'plush_armchair', name: 'Velvet Wingback Chair', category: 'seating' as const, cost: 160, icon: '🛋️', description: 'Plush forest green armchair with deep cushions.', comfortBonus: 18 },
-  { id: 'country_sofa', name: 'Linen Homestead Couch', category: 'seating' as const, cost: 240, icon: '🛋️', description: 'Spacious cozy sofa with quilted pillows.', comfortBonus: 25 },
+  { id: 'dining_chair', name: 'Narra Dining Chair', category: 'seating' as const, cost: 75, icon: '🪑', description: 'Handcrafted solid dining chair with woven cane seat.', comfortBonus: 10 },
+  { id: 'plush_armchair', name: 'Velvet Wingback Chair', category: 'seating' as const, cost: 160, icon: '🛋️', description: 'Plush armchair with deep cushions and high backrest.', comfortBonus: 18 },
+  { id: 'country_sofa', name: 'Linen Homestead Couch', category: 'seating' as const, cost: 240, icon: '🛋️', description: 'Spacious cozy 3-seater sofa with embroidered cushions.', comfortBonus: 25 },
   { id: 'oak_table', name: 'Farmhouse Oak Table', category: 'tables' as const, cost: 130, icon: '🪵', description: 'Sturdy solid oak table for family meals.', comfortBonus: 14 },
+  { id: 'coffee_table', name: 'Carved Coffee Table', category: 'tables' as const, cost: 85, icon: '☕', description: 'Low wooden coffee table with shelf for magazines.', comfortBonus: 9 },
   { id: 'tea_cart', name: 'Herbal Tea Station', category: 'tables' as const, cost: 110, icon: '🫖', description: 'Wheeled cart with dried chamomile and porcelain cups.', comfortBonus: 10 },
+  { id: 'desk_study', name: 'Homestead Writing Desk', category: 'tables' as const, cost: 165, icon: '✍️', description: 'Cedar wood secretary desk with brass drawer handles.', comfortBonus: 15 },
   { id: 'four_poster_bed', name: 'Quilted Canopy Bed', category: 'bedroom' as const, cost: 320, icon: '🛏️', description: 'Hand-sewn patchwork quilt with goose down pillows.', comfortBonus: 35 },
   { id: 'pine_wardrobe', name: 'Carved Pine Wardrobe', category: 'bedroom' as const, cost: 175, icon: '🚪', description: 'Spacious wardrobe smelling of fresh mountain pine.', comfortBonus: 16 },
+  { id: 'bookshelf', name: 'Grand Library Bookshelf', category: 'bedroom' as const, cost: 190, icon: '📚', description: 'Floor-to-ceiling shelves packed with agrarian lore.', comfortBonus: 20 },
   { id: 'country_rug', name: 'Braided Wool Rug', category: 'rugs' as const, cost: 75, icon: '🧶', description: 'Soft colorful circular braided wool mat.', comfortBonus: 8 },
-  { id: 'persian_carpet', name: 'Meadow Floral Tapestry Rug', category: 'rugs' as const, cost: 120, icon: '🏵️', description: 'Detailed woven tapestry rug with botanical motifs.', comfortBonus: 14 },
+  { id: 'persian_carpet', name: 'Meadow Tapestry Rug', category: 'rugs' as const, cost: 120, icon: '🏵️', description: 'Detailed woven tapestry rug with botanical motifs.', comfortBonus: 14 },
   { id: 'plant_fig', name: 'Potted Fiddle Leaf', category: 'plants' as const, cost: 65, icon: '🪴', description: 'Glossy broad green leaves purifying the cottage air.', comfortBonus: 8 },
   { id: 'plant_fern', name: 'Hanging Boston Fern', category: 'plants' as const, cost: 50, icon: '🌿', description: 'Graceful emerald fronds spilling from macrame.', comfortBonus: 6 },
   { id: 'gramophone', name: 'Vintage Brass Gramophone', category: 'hearth' as const, cost: 280, icon: '🎺', description: 'Plays soothing acoustic waltzes and warm vinyl crackle.', comfortBonus: 30 },
   { id: 'grandfather_clock', name: 'Cedar Grandfather Clock', category: 'bedroom' as const, cost: 210, icon: '🕰️', description: 'Gentle rhythmic pendulum ticking soothingly.', comfortBonus: 22 },
+  { id: 'brass_lamp', name: 'Ornate Bankers Lamp', category: 'hearth' as const, cost: 80, icon: '💡', description: 'Green glass shade casting soothing reading illumination.', comfortBonus: 10 },
+];
+
+// --- GALLERY OF HOMESTEAD PAINTINGS ---
+export const HOUSE_PAINTINGS: HousePainting[] = [
+  {
+    id: 'amorsolo_rice',
+    title: 'Planting Rice at Mount Mayon',
+    artist: 'Fernando Amorsolo Homage',
+    era: 'Classical Golden Sunlight',
+    description: 'Bicol farmers rhythmically planting emerald rice shoots in golden morning light before the perfect cone of Mount Mayon.',
+    icon: '🌾',
+    previewGradient: 'from-amber-400 via-orange-500 to-emerald-700',
+    frameStyle: 'carved_narra',
+    comfortBonus: 35,
+    cost: 150,
+  },
+  {
+    id: 'mayon_sunset',
+    title: 'Majestic Mayon Twilight',
+    artist: 'Maestro Bicolano',
+    era: 'Vibrant Impressionism',
+    description: 'Dramatic violet and crimson sunset clouds crowning Mount Mayon, casting reflections across flooded palay terraces.',
+    icon: '🌋',
+    previewGradient: 'from-fuchsia-600 via-rose-500 to-indigo-900',
+    frameStyle: 'gold_baroque',
+    comfortBonus: 40,
+    cost: 220,
+  },
+  {
+    id: 'bicol_harana',
+    title: 'Rural Moonlit Harana',
+    artist: 'Naga Conservatory',
+    era: 'Romantic Folk',
+    description: 'Traditional acoustic guitar serenade under the moonlit veranda of a heritage Bahay na Bato, illuminated by capiz glow.',
+    icon: '🎸',
+    previewGradient: 'from-indigo-950 via-slate-800 to-amber-400',
+    frameStyle: 'rustic_teak',
+    comfortBonus: 30,
+    cost: 180,
+  },
+  {
+    id: 'kalabaw_dawn',
+    title: 'Carabao in the Morning Mist',
+    artist: 'Homestead Naturalist',
+    era: 'Pastoral Realism',
+    description: 'A loyal water buffalo resting peacefully beside river reed grasses while morning fog rolls across Naga Farm.',
+    icon: '🐃',
+    previewGradient: 'from-emerald-800 via-teal-700 to-amber-200',
+    frameStyle: 'modern_brass',
+    comfortBonus: 25,
+    cost: 120,
+  },
+  {
+    id: 'sunflower_granary',
+    title: 'Sunflowers by the Timber Silo',
+    artist: 'Post-Impressionist Master',
+    era: 'Sunlit Impressionism',
+    description: 'Vibrant golden sunflowers turning toward the noonday sun beside the rustic cedar storehouse.',
+    icon: '🌻',
+    previewGradient: 'from-yellow-400 via-amber-500 to-sky-600',
+    frameStyle: 'gold_baroque',
+    comfortBonus: 35,
+    cost: 200,
+  },
+  {
+    id: 'fluvial_parade',
+    title: 'Naga River Fluvial Pagoda',
+    artist: 'Camarines Sur Guild',
+    era: 'Festival Baroque',
+    description: 'Glowing candlelit pagoda barges floating down the tranquil Naga River during the sacred annual harvest feast.',
+    icon: '⛵',
+    previewGradient: 'from-amber-500 via-rose-600 to-blue-950',
+    frameStyle: 'carved_narra',
+    comfortBonus: 45,
+    cost: 280,
+  },
+  {
+    id: 'starry_valley',
+    title: 'Starry Night Over Mount Isarog',
+    artist: 'Celestial Expressionist',
+    era: 'Modern Expressionism',
+    description: 'Swirling luminous stars and fireflies dancing over the quiet pastures of Naga Farm.',
+    icon: '✨',
+    previewGradient: 'from-blue-950 via-indigo-900 to-cyan-500',
+    frameStyle: 'gold_baroque',
+    comfortBonus: 40,
+    cost: 240,
+  },
+  {
+    id: 'tropical_orchids',
+    title: 'Rainforest Wild Vanda Orchids',
+    artist: 'Botanical Explorer',
+    era: 'Natural History Study',
+    description: 'Detailed study of rare endemic purple and jade orchids blooming along ancient mountain mahogany trunks.',
+    icon: '🌺',
+    previewGradient: 'from-emerald-900 via-purple-700 to-pink-400',
+    frameStyle: 'rustic_teak',
+    comfortBonus: 28,
+    cost: 140,
+  },
+];
+
+// --- WALLPAPERS & INTERIOR WALL FINISHES ---
+export const WALL_STYLES = [
+  { id: 'cream_plaster', name: 'Warm Lime Plaster', desc: 'Hand-troweled rustic limestone finish with warm natural glow.', preview: '#fef3c7', pattern: 'plaster' },
+  { id: 'capiz_lattice', name: 'Capiz Shell Lattice', desc: 'Mother-of-pearl squares encased in dark mahogany framing.', preview: '#f8fafc', pattern: 'lattice' },
+  { id: 'sawali_bamboo', name: 'Sawali Bamboo Weave', desc: 'Handcrafted chevron woven bamboo strips with natural texture.', preview: '#d97706', pattern: 'sawali' },
+  { id: 'vintage_rose', name: 'Pastoral Rosebud Floral', desc: 'Victorian floral wallpaper with delicate blush petals.', preview: '#fce7f3', pattern: 'floral' },
+  { id: 'emerald_damask', name: 'Royal Emerald Damask', desc: 'Rich embossed damask textile wallpaper with gold flecks.', preview: '#064e3b', pattern: 'damask' },
+  { id: 'terracotta_adobe', name: 'Sunbaked Terracotta', desc: 'Earthy warmth inspired by traditional Bicol clay pottery.', preview: '#9a3412', pattern: 'adobe' },
+  { id: 'midnight_starlight', name: 'Midnight Celestial Navy', desc: 'Deep twilight indigo wall patterned with gold constellations.', preview: '#0f172a', pattern: 'stars' },
+];
+
+// --- FLOOR FINISHES ---
+export const FLOOR_STYLES = [
+  { id: 'hardwood_oak', name: 'Polished Narra Planks', desc: 'Rich amber-brown tropical hardwood with warm luster.', preview: '#78350f', pattern: 'planks' },
+  { id: 'bamboo_parquet', name: 'Herringbone Bamboo', desc: 'Interlocking golden bamboo parquet tiles.', preview: '#b45309', pattern: 'herringbone' },
+  { id: 'capiz_terrazzo', name: 'Capiz River Terrazzo', desc: 'Polished riverstone and crushed shell aggregate tiles.', preview: '#e2e8f0', pattern: 'stone' },
+  { id: 'terracotta_tiles', name: 'Rustic Terracotta Tiles', desc: 'Handmade square clay tiles with sand mortar.', preview: '#c2410c', pattern: 'checker' },
+  { id: 'checkered_bistro', name: 'Ivory & Onyx Checkered', desc: 'Classic French bistro polished marble checkerboard.', preview: '#1e293b', pattern: 'bistro' },
+  { id: 'woven_banig', name: 'Pandan Woven Banig', desc: 'Traditional cooling woven pandan matting for floors.', preview: '#a16207', pattern: 'weave' },
+];
+
+// --- SIMS-STYLE FURNITURE SWATCHES ---
+export const FURNITURE_SWATCHES = [
+  { id: 'golden_teak', name: 'Golden Teak', hex: '#d97706', border: '#b45309', bgLight: '#fef3c7' },
+  { id: 'dark_mahogany', name: 'Narra Mahogany', hex: '#7c2d12', border: '#451a03', bgLight: '#ffedd5' },
+  { id: 'whitewash', name: 'Vintage Whitewash', hex: '#f8fafc', border: '#94a3b8', bgLight: '#ffffff' },
+  { id: 'emerald_velvet', name: 'Emerald Velvet', hex: '#047857', border: '#064e3b', bgLight: '#d1fae5' },
+  { id: 'midnight_navy', name: 'Midnight Navy', hex: '#1e3a8a', border: '#172554', bgLight: '#dbeafe' },
+  { id: 'ruby_crimson', name: 'Ruby Crimson', hex: '#be123c', border: '#881337', bgLight: '#ffe4e6' },
+  { id: 'natural_rattan', name: 'Natural Rattan', hex: '#ca8a04', border: '#854d0e', bgLight: '#fef9c3' },
+  { id: 'charcoal_iron', name: 'Charcoal Iron', hex: '#334155', border: '#0f172a', bgLight: '#e2e8f0' },
 ];
 
 export const HOUSE_LEVELS = [

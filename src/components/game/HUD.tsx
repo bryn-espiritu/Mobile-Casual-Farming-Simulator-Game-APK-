@@ -17,6 +17,8 @@ interface HUDProps {
   onAdvanceDay: () => void;
   onToggleTimeOfDay: () => void;
   onCycleWeather: () => void;
+  is3DMode?: boolean;
+  onToggle3DMode?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -33,6 +35,8 @@ export const HUD: React.FC<HUDProps> = ({
   onAdvanceDay,
   onToggleTimeOfDay,
   onCycleWeather,
+  is3DMode = false,
+  onToggle3DMode,
 }) => {
   const xpNeeded = gameState.level * 100;
   const xpPercent = Math.min(100, Math.round((gameState.xp / xpNeeded) * 100));
@@ -170,6 +174,28 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Side Quick Actions on right thumb side */}
       <div className="pointer-events-none self-end flex flex-col gap-2 mb-20 sm:mb-24">
+        {/* 3D / 2D Farm Mode Toggle Button */}
+        {onToggle3DMode && (
+          <button
+            onClick={() => {
+              sound.playTap();
+              onToggle3DMode();
+            }}
+            className={`pointer-events-auto flex items-center gap-2 px-3 py-2 font-bold text-xs rounded-2xl shadow-lg border active:scale-95 transition-all cursor-pointer ${
+              is3DMode
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-cyan-300/50 shadow-cyan-500/25 ring-2 ring-cyan-400/40'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border-cyan-500/30'
+            }`}
+            title="Toggle between 3D Farm & 2D Canvas"
+          >
+            <span className="text-base">{is3DMode ? '🌐' : '📐'}</span>
+            <span className="hidden sm:inline">{is3DMode ? '3D Farm' : '2D Farm'}</span>
+            <span className="text-[10px] uppercase font-mono px-1 rounded bg-black/40 text-cyan-200">
+              {is3DMode ? '3D' : '2D'}
+            </span>
+          </button>
+        )}
+
         {/* Cooking Kusina Simulator Button */}
         <button
           onClick={() => {
