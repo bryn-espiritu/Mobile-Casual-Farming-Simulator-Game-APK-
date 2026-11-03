@@ -182,7 +182,8 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
   // Perform action on tile at (gx, gy)
   const executeActionOnTile = useCallback((gx: number, gy: number) => {
     const state = gameStateRef.current;
-    if (gx < 0 || gx >= GRID_SIZE || gy < 0 || gy >= GRID_SIZE) return;
+    const maxGrid = state.gridSize || GRID_SIZE;
+    if (gx < 0 || gx >= maxGrid || gy < 0 || gy >= maxGrid) return;
 
     if (movingTileRef.current) {
       onPlaceMovedTile(gx, gy);
@@ -193,6 +194,13 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
     if (!tile) return;
 
     const currentTool = state.selectedTool;
+
+    // DIRECT MOVE TOOL: Pick up any item (field, house, animal, decor)
+    if (currentTool === 'move') {
+      sound.playTap();
+      onTileAction(tile, 'move');
+      return;
+    }
 
     // Direct animal tap?
     if (tile.animal && (currentTool === 'inspect' || currentTool === 'harvest')) {
@@ -1594,6 +1602,7 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         ctx.beginPath();
         ctx.moveTo(sx, sy - th / 2);
         ctx.lineTo(sx + tw / 2, sy);
+        ctx.lineTo(sx + tw / 2, sy);
         ctx.lineTo(sx, sy + th / 2);
         ctx.lineTo(sx - tw / 2, sy);
         ctx.closePath();
@@ -1602,6 +1611,37 @@ export const IsometricCanvas: React.FC<IsometricCanvasProps> = ({
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 2 * zoom;
         ctx.stroke();
+
+        if (movingTileRef.current) {
+          ctx.font = `bold ${Math.max(10, Math.round(11 * zoom))}px sans-serif`;
+          ctx.fillStyle = '#fef08a';
+          ctx.textAlign = 'center';
+          ctx.fillText('📦 Tap to Place', sx, sy - th / 2 - 6);
+        }
+      }
+
+      // Draw dashed outline on source tile being relocated
+      if (movingTileRef.current) {
+        const srcPos = gridToScreen(movingTileRef.current.x, movingTileRef.current.y, width, height);
+        const tw = TILE_WIDTH * zoom;
+        const th = TILE_HEIGHT * zoom;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(srcPos.sx, srcPos.sy - th / 2);
+        ctx.lineTo(srcPos.sx + tw / 2, srcPos.sy);
+        ctx.lineTo(srcPos.sx, srcPos.sy + th / 2);
+        ctx.lineTo(srcPos.sx - tw / 2, srcPos.sy);
+        ctx.closePath();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.setLineDash([5 * zoom, 4 * zoom]);
+        ctx.lineWidth = 2.5 * zoom;
+        ctx.stroke();
+
+        ctx.font = `bold ${Math.max(10, Math.round(11 * zoom))}px sans-serif`;
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.fillText('Moving...', srcPos.sx, srcPos.sy - th / 2 - 6);
+        ctx.restore();
       }
 
       // 5. Particles Update & Render

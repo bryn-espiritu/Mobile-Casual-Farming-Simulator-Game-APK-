@@ -855,6 +855,41 @@ export const Farm3DCanvas: React.FC<Farm3DCanvasProps> = ({
     const hits = raycaster.intersectObjects(farmGroup.children, true);
     if (hits.length === 0) return;
 
+    // If movingTile is active: any click on a tile places the moving item
+    if (movingTile) {
+      let hitTile: FarmTile | null = null;
+      let currObj: THREE.Object3D | null = hits[0].object;
+      while (currObj && currObj !== farmGroup) {
+        if (currObj.userData?.tile) {
+          hitTile = currObj.userData.tile;
+          break;
+        }
+        currObj = currObj.parent;
+      }
+      if (hitTile) {
+        onPlaceMovedTile(hitTile.x, hitTile.y);
+        return;
+      }
+    }
+
+    // If Move tool is active: pick up the tile (field, house, animal)
+    if (gameState.selectedTool === 'move') {
+      let hitTile: FarmTile | null = null;
+      let currObj: THREE.Object3D | null = hits[0].object;
+      while (currObj && currObj !== farmGroup) {
+        if (currObj.userData?.tile) {
+          hitTile = currObj.userData.tile;
+          break;
+        }
+        currObj = currObj.parent;
+      }
+      if (hitTile) {
+        sound.playTap();
+        onTileAction(hitTile, 'move');
+        return;
+      }
+    }
+
     // Traverse upwards from hit object to identify clicked game component
     let hitObject: THREE.Object3D | null = hits[0].object;
     while (hitObject && hitObject !== farmGroup) {

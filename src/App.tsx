@@ -9,6 +9,7 @@ import {
   ToolMode,
   CropType,
   FarmTile,
+  TileType,
   SeasonalTask,
   TownOrder,
   Season,
@@ -760,34 +761,100 @@ export default function App() {
     if (!movingTile) return;
 
     sound.playTap();
+    let movedDescription = 'Item';
+
     setGameState((prev) => {
       const sourceTile = prev.tiles.find((t) => t.x === movingTile.x && t.y === movingTile.y);
       const targetTile = prev.tiles.find((t) => t.x === targetX && t.y === targetY);
       if (!sourceTile || !targetTile) return prev;
+      if (sourceTile.x === targetTile.x && sourceTile.y === targetTile.y) return prev;
 
-      const newTiles = prev.tiles.map((t) => {
+      const hasAnimal = Boolean(sourceTile.animal);
+      const hasStructure = Boolean(sourceTile.structure);
+      const isField = sourceTile.type === 'soil' || Boolean(sourceTile.crop);
+
+      if (hasAnimal) {
+        movedDescription = `${sourceTile.animal?.name || 'Farm Animal'}`;
+      } else if (hasStructure) {
+        movedDescription = `${sourceTile.structure?.type.replace('_', ' ').toUpperCase() || 'Building'}`;
+      } else if (isField) {
+        movedDescription = sourceTile.crop ? `${sourceTile.crop.type.toUpperCase()} Field` : 'Soil Field';
+      }
+
+      const newTiles: FarmTile[] = prev.tiles.map((t): FarmTile => {
+        // Source Tile transformation
         if (t.x === sourceTile.x && t.y === sourceTile.y) {
+          if (hasAnimal && !hasStructure && !isField) {
+            return {
+              ...t,
+              animal: targetTile.animal,
+            };
+          }
+          if (hasStructure && !hasAnimal && !isField) {
+            return {
+              ...t,
+              structure: targetTile.structure,
+            };
+          }
+          if (isField && !hasStructure && !hasAnimal) {
+            return {
+              ...t,
+              type: (targetTile.type === 'soil' ? 'soil' : 'grass') as TileType,
+              crop: targetTile.crop,
+            };
+          }
+          // Comprehensive swap
           return {
             ...t,
+            type: targetTile.type,
+            crop: targetTile.crop,
             structure: targetTile.structure,
             animal: targetTile.animal,
             decor: targetTile.decor,
-            type: targetTile.type === 'grass' ? 'grass' : t.type,
           };
         }
+
+        // Target Tile transformation
         if (t.x === targetTile.x && t.y === targetTile.y) {
+          if (hasAnimal && !hasStructure && !isField) {
+            return {
+              ...t,
+              animal: sourceTile.animal,
+            };
+          }
+          if (hasStructure && !hasAnimal && !isField) {
+            return {
+              ...t,
+              structure: sourceTile.structure,
+            };
+          }
+          if (isField && !hasStructure && !hasAnimal) {
+            return {
+              ...t,
+              type: 'soil' as TileType,
+              crop: sourceTile.crop,
+            };
+          }
           return {
             ...t,
+            type: sourceTile.type,
+            crop: sourceTile.crop,
             structure: sourceTile.structure,
             animal: sourceTile.animal,
             decor: sourceTile.decor,
-            type: sourceTile.type !== 'grass' && sourceTile.type !== 'soil' ? sourceTile.type : t.type,
           };
         }
+
         return t;
       });
 
       return { ...prev, tiles: newTiles };
+    });
+
+    setToastMessage({
+      id: `move_${Date.now()}`,
+      text: `Relocated ${movedDescription}!`,
+      subtext: `Moved to Tile (${targetX + 1}, ${targetY + 1})`,
     });
 
     setMovingTile(null);
@@ -1421,6 +1488,28 @@ export default function App() {
           is3DMode={is3DMode}
           onToggle3DMode={() => setIs3DMode(!is3DMode)}
         />
+
+        {/* Active Relocation Mode Banner */}
+        {movingTile && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-3 bg-amber-950/95 text-amber-200 px-4 py-2 rounded-2xl border-2 border-amber-400 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-3 duration-200 max-w-[92vw]">
+            <span className="text-xl animate-bounce">📦</span>
+            <div className="flex flex-col text-left">
+              <span className="font-bold text-xs text-white">
+                Relocating {movingTile.animal ? `Animal: ${movingTile.animal.name || movingTile.animal.type}` : movingTile.structure ? `Building: ${movingTile.structure.type.replace('_', ' ').toUpperCase()}` : movingTile.crop ? `Field: ${movingTile.crop.type.toUpperCase()}` : movingTile.type === 'soil' ? 'Soil Field' : 'Tile'}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-amber-300">Tap any target tile to place or swap</span>
+            </div>
+            <button
+              onClick={() => {
+                sound.playTap();
+                setMovingTile(null);
+              }}
+              className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 shrink-0"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {/* Floating Toast Notification Banner */}
         {toastMessage && (
