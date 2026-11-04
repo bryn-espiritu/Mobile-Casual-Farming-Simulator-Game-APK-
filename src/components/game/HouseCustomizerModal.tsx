@@ -929,7 +929,7 @@ export const HouseCustomizerModal: React.FC<HouseCustomizerModalProps> = ({
                     <span className="text-2xl">🏛️</span>
                     <div>
                       <h3 className="text-sm font-bold text-white">{currentLevelInfo.name}</h3>
-                      <p className="text-xs text-emerald-400 font-medium">Level {house.level} of 3</p>
+                      <p className="text-xs text-emerald-400 font-medium">Level {house.level} of {HOUSE_LEVELS.length}</p>
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-slate-400">
@@ -941,33 +941,53 @@ export const HouseCustomizerModal: React.FC<HouseCustomizerModalProps> = ({
                   {currentLevelInfo.perk}
                 </p>
 
-                {nextLevelInfo ? (
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-amber-300 block">Next: {nextLevelInfo.name}</span>
-                      <p className="text-[11px] text-slate-400">{nextLevelInfo.perk}</p>
-                    </div>
+                {nextLevelInfo ? (() => {
+                  const farmLevelOk = gameState.level >= (nextLevelInfo.minFarmLevel || 1);
+                  const canAffordCoins = gameState.coins >= nextLevelInfo.upgradeCost;
+                  const canAffordGems = gameState.gems >= nextLevelInfo.gemCost;
+                  const canUpgrade = farmLevelOk && canAffordCoins && canAffordGems;
 
-                    <button
-                      onClick={() => {
-                        if (gameState.coins >= nextLevelInfo.upgradeCost && gameState.gems >= nextLevelInfo.gemCost) {
-                          sound.playHammer();
-                          onUpgradeHouseLevel(nextLevelInfo.level, nextLevelInfo.upgradeCost, nextLevelInfo.gemCost);
-                        }
-                      }}
-                      disabled={gameState.coins < nextLevelInfo.upgradeCost || gameState.gems < nextLevelInfo.gemCost}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                        gameState.coins >= nextLevelInfo.upgradeCost && gameState.gems >= nextLevelInfo.gemCost
-                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg active:scale-95'
-                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <span>Upgrade:</span>
-                      <span>🪙 {nextLevelInfo.upgradeCost}</span>
-                      <span>💎 {nextLevelInfo.gemCost}</span>
-                    </button>
-                  </div>
-                ) : (
+                  return (
+                    <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-amber-300 block">Next: {nextLevelInfo.name}</span>
+                          {!farmLevelOk && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-500/30">
+                              Requires Farm Lv {nextLevelInfo.minFarmLevel}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400">{nextLevelInfo.perk}</p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (canUpgrade) {
+                            sound.playHammer();
+                            onUpgradeHouseLevel(nextLevelInfo.level, nextLevelInfo.upgradeCost, nextLevelInfo.gemCost);
+                          }
+                        }}
+                        disabled={!canUpgrade}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          canUpgrade
+                            ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-lg active:scale-95'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {!farmLevelOk ? (
+                          <span>🔒 Requires Farm Lv {nextLevelInfo.minFarmLevel}</span>
+                        ) : (
+                          <>
+                            <span>Upgrade:</span>
+                            <span>🪙 {nextLevelInfo.upgradeCost}</span>
+                            {nextLevelInfo.gemCost > 0 && <span>💎 {nextLevelInfo.gemCost}</span>}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })() : (
                   <div className="text-xs text-emerald-300 font-semibold text-center py-1">
                     ✨ Your homestead has reached maximum Grand Estate architectural splendor!
                   </div>

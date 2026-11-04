@@ -314,52 +314,218 @@ export const ShopModal: React.FC<ShopModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'animals' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {animalsCatalog.map((an) => {
-                const canAfford = gameState.coins >= an.cost;
-                const levelOk = gameState.level >= an.minLevel;
+          {activeTab === 'animals' && (() => {
+            const chickenCount = gameState.tiles.filter((t) => t.animal?.type === 'chicken').length;
+            const chickenLimit = Math.floor(gameState.level / 3);
 
-                return (
-                  <div
-                    key={an.id}
-                    className="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 flex flex-col justify-between gap-2"
-                  >
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl shrink-0">
-                        {an.icon}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-white">{an.name}</span>
-                          {!levelOk && (
-                            <span className="text-[10px] text-amber-400 font-mono">Lv {an.minLevel}</span>
-                          )}
+            const cowCount = gameState.tiles.filter((t) => t.animal?.type === 'cow').length;
+            const cowLimit = Math.floor(gameState.level / 10);
+
+            const sheepCount = gameState.tiles.filter((t) => t.animal?.type === 'sheep').length;
+            const sheepLimit = gameState.level < 15 ? 0 : 1 + Math.floor((gameState.level - 15) / 10);
+
+            const carabaoCount = gameState.tiles.filter((t) => t.animal?.type === 'carabao').length;
+            const isKalabawUnlocked = Boolean(gameState.kalabawUnlocked || carabaoCount > 0);
+            const currentPlowTier = gameState.kalabawPlowLevel || 1;
+
+            return (
+              <div className="space-y-4">
+                {/* Animal Capacity Info Banner */}
+                <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📋</span>
+                    <span className="font-semibold text-slate-300">Livestock Limits:</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-amber-300 border border-slate-700">
+                      🐔 Chickens: {chickenCount}/{chickenLimit} (Every 3rd Lv)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-sky-300 border border-slate-700">
+                      🐄 Cows: {cowCount}/{cowLimit} (Every 10th Lv)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-rose-300 border border-slate-700">
+                      🐑 Sheep: {sheepCount}/{sheepLimit} (Lv 15, 25, 35...)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {animalsCatalog.map((an) => {
+                    const canAfford = gameState.coins >= an.cost;
+                    const levelOk = gameState.level >= an.minLevel;
+
+                    let isCapacityReached = false;
+                    let capacityLabel = '';
+                    let buttonText = `Adopt for 🪙 ${an.cost}`;
+
+                    if (an.animalType === 'chicken') {
+                      isCapacityReached = chickenCount >= chickenLimit;
+                      capacityLabel = `Slot: ${chickenCount}/${chickenLimit}`;
+                      if (!levelOk) {
+                        buttonText = '🔒 Unlocks at Farm Level 3';
+                      } else if (isCapacityReached) {
+                        buttonText = `🚫 Max Flock (${chickenCount}/${chickenLimit}) · Next at Lv ${(chickenCount + 1) * 3}`;
+                      } else {
+                        buttonText = `Adopt for 🪙 ${an.cost} (${chickenCount}/${chickenLimit} owned)`;
+                      }
+                    } else if (an.animalType === 'cow') {
+                      isCapacityReached = cowCount >= cowLimit;
+                      capacityLabel = `Slot: ${cowCount}/${cowLimit}`;
+                      if (!levelOk) {
+                        buttonText = '🔒 Unlocks at Farm Level 10';
+                      } else if (isCapacityReached) {
+                        buttonText = `🚫 Max Pasture (${cowCount}/${cowLimit}) · Next at Lv ${(cowCount + 1) * 10}`;
+                      } else {
+                        buttonText = `Adopt for 🪙 ${an.cost} (${cowCount}/${cowLimit} owned)`;
+                      }
+                    } else if (an.animalType === 'sheep') {
+                      isCapacityReached = sheepCount >= sheepLimit;
+                      capacityLabel = `Slot: ${sheepCount}/${sheepLimit}`;
+                      if (!levelOk) {
+                        buttonText = '🔒 Unlocks at Farm Level 15';
+                      } else if (isCapacityReached) {
+                        buttonText = `🚫 Max Pen (${sheepCount}/${sheepLimit}) · Next at Lv ${15 + sheepCount * 10}`;
+                      } else {
+                        buttonText = `Adopt for 🪙 ${an.cost} (${sheepCount}/${sheepLimit} owned)`;
+                      }
+                    } else if (an.animalType === 'carabao') {
+                      if (isKalabawUnlocked) {
+                        buttonText = '✓ Kalabaw Active on Farm';
+                      } else if (!levelOk) {
+                        buttonText = '🔒 Requires Level 20 & 🪙 50,000';
+                      } else if (!canAfford) {
+                        buttonText = `🪙 50,000 Coins Required (Have: 🪙 ${gameState.coins})`;
+                      } else {
+                        buttonText = `Adopt Kalabaw for 🪙 50,000`;
+                      }
+                    }
+
+                    const canAdopt =
+                      an.animalType === 'carabao'
+                        ? canAfford && levelOk && !isKalabawUnlocked
+                        : canAfford && levelOk && !isCapacityReached;
+
+                    return (
+                      <div
+                        key={an.id}
+                        className={`p-3 bg-slate-800/60 rounded-2xl border flex flex-col justify-between gap-2 transition-colors ${
+                          an.animalType === 'carabao' && isKalabawUnlocked
+                            ? 'border-amber-500/40 bg-amber-950/20'
+                            : 'border-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl shrink-0">
+                            {an.icon}
+                          </div>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold text-white truncate">{an.name}</span>
+                              {capacityLabel && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-amber-300 border border-slate-700 shrink-0">
+                                  {capacityLabel}
+                                </span>
+                              )}
+                              {!capacityLabel && !levelOk && (
+                                <span className="text-[10px] text-amber-400 font-mono shrink-0">Lv {an.minLevel}</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{an.desc}</p>
+                            <span className="text-[10px] text-rose-300 font-medium mt-1">Yields: {an.produce}</span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{an.desc}</p>
-                        <span className="text-[10px] text-rose-300 font-medium mt-1">Yields: {an.produce}</span>
+
+                        <button
+                          disabled={!canAdopt}
+                          onClick={() => {
+                            sound.playCoin();
+                            onBuyItem(an.id, an.name, an.cost, 'animal');
+                          }}
+                          className={`w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            canAdopt
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md active:scale-95'
+                              : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <span>{buttonText}</span>
+                        </button>
                       </div>
+                    );
+                  })}
+                </div>
+
+                {/* Kalabaw Furrow Radius Upgrades (Available when Kalabaw is unlocked) */}
+                {isKalabawUnlocked && (
+                  <div className="p-4 bg-gradient-to-b from-amber-950/40 to-slate-950/80 rounded-2xl border-2 border-amber-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🐃</span>
+                        <div>
+                          <h3 className="text-xs sm:text-sm font-bold text-white">Kalabaw Plowing Radius Upgrades</h3>
+                          <p className="text-[11px] text-amber-300">
+                            Current: Tier {currentPlowTier} ({KALABAW_UPGRADES[currentPlowTier - 1]?.name || 'Standard Furrow'})
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {currentPlowTier === 3 ? 'Max Radius' : `Tier ${currentPlowTier}/3`}
+                      </span>
                     </div>
 
-                    <button
-                      disabled={!canAfford || !levelOk}
-                      onClick={() => {
-                        sound.playCoin();
-                        onBuyItem(an.id, an.name, an.cost, 'animal');
-                      }}
-                      className={`w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                        canAfford && levelOk
-                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md active:scale-95'
-                          : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <span>Adopt for 🪙 {an.cost}</span>
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {KALABAW_UPGRADES.map((tier) => {
+                        const isOwned = currentPlowTier >= tier.level;
+                        const isNext = currentPlowTier + 1 === tier.level;
+                        const levelOk = gameState.level >= tier.minLevel;
+                        const canAfford = gameState.coins >= tier.cost;
+
+                        return (
+                          <div
+                            key={tier.level}
+                            className={`p-2.5 rounded-xl border flex flex-col justify-between gap-1.5 ${
+                              isOwned
+                                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                                : isNext
+                                ? 'bg-slate-800/80 border-amber-500/40 text-slate-100'
+                                : 'bg-slate-900/40 border-slate-800 text-slate-400 opacity-60'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between text-xs font-bold">
+                                <span>Tier {tier.level}: {tier.name}</span>
+                                {isOwned && <span className="text-emerald-400">✓ Active</span>}
+                              </div>
+                              <p className="text-[10px] text-slate-300 mt-1 leading-snug">{tier.desc}</p>
+                            </div>
+
+                            {isNext && (
+                              <button
+                                disabled={!canAfford || !levelOk}
+                                onClick={() => {
+                                  if (onUpgradeKalabawPlow) {
+                                    onUpgradeKalabawPlow(tier.level, tier.cost);
+                                  }
+                                }}
+                                className={`w-full py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                  canAfford && levelOk
+                                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md active:scale-95'
+                                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                }`}
+                              >
+                                {!levelOk
+                                  ? `Requires Lv ${tier.minLevel}`
+                                  : `Upgrade: 🪙 ${tier.cost}`}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })()}
 
           {activeTab === 'decor' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

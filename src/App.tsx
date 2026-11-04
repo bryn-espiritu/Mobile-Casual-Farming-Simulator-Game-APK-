@@ -27,12 +27,13 @@ import {
   getRareHarvestDrop,
   expandGridTiles,
   LAND_EXPANSIONS,
+  getLevelUnlockInfo,
+  LevelUnlockInfo,
 } from './constants/gameData';
 import { loadSavedGameState, saveGameState, getDefaultGameState, clearSavedGameState } from './services/storage';
 import { sound } from './services/audio';
 import { TitleScreen } from './components/game/TitleScreen';
 import { IsometricCanvas } from './components/game/IsometricCanvas';
-import { Farm3DCanvas } from './components/game/Farm3DCanvas';
 import { HUD } from './components/game/HUD';
 import { ToolBar } from './components/game/ToolBar';
 import { ShopModal } from './components/game/ShopModal';
@@ -45,11 +46,11 @@ import { HouseCustomizerModal } from './components/game/HouseCustomizerModal';
 import { AutomationModal } from './components/game/AutomationModal';
 import { CookingModal } from './components/game/CookingModal';
 import { LandExpansionModal } from './components/game/LandExpansionModal';
+import { LevelUnlockModal } from './components/game/LevelUnlockModal';
 
 export default function App() {
   const [screen, setScreen] = useState<'TITLE' | 'PLAYING'>('TITLE');
   const [gameState, setGameState] = useState<GameState>(() => loadSavedGameState());
-  const [is3DMode, setIs3DMode] = useState(false);
 
   // Modal Dialogs
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -62,6 +63,7 @@ export default function App() {
   const [isAutomationOpen, setIsAutomationOpen] = useState(false);
   const [isCookingOpen, setIsCookingOpen] = useState(false);
   const [isLandExpansionOpen, setIsLandExpansionOpen] = useState(false);
+  const [levelUnlockInfo, setLevelUnlockInfo] = useState<LevelUnlockInfo | null>(null);
 
   // In-game Floating Feedback Banner (for rare harvests, buffs, and alerts)
   const [toastMessage, setToastMessage] = useState<{
@@ -163,6 +165,9 @@ export default function App() {
 
       if (didLevelUp) {
         sound.playLevelUp();
+        setTimeout(() => {
+          setLevelUnlockInfo(getLevelUnlockInfo(currentLevel));
+        }, 300);
       }
 
       return {
@@ -433,23 +438,90 @@ export default function App() {
 
     if (tool === 'plow') {
       if (tile.type === 'grass') {
+        const currentSoilCount = gameState.tiles.filter((t) => t.type === 'soil' || Boolean(t.crop)).length;
+        const maxSoilCount = gameState.level * 3;
+
+        if (currentSoilCount >= maxSoilCount) {
+          sound.playTap();
+          setToastMessage({
+            id: `field_limit_${Date.now()}`,
+            text: `⚠️ Field Limit Reached (${currentSoilCount}/${maxSoilCount})!`,
+            subtext: `Farm Level ${gameState.level} allows up to ${maxSoilCount} fields (${gameState.level} × 3 stacked). Level up to unlock +3 more plots!`,
+          });
+          return;
+        }
+
+        sound.playPlow();
         setGameState((prev) => ({
           ...prev,
           tiles: prev.tiles.map((t) => (t.x === x && t.y === y ? { ...t, type: 'soil' } : t)),
         }));
       }
     } else if (tool === 'carabao_plow') {
-      // Carabao Plow furrow: plows 3 tiles along the X axis
-      const targetCoords = [
-        { x, y },
-        { x: x + 1, y },
-        { x: x - 1, y },
-      ];
+      const isKalabawUnlocked = Boolean(
+        gameState.kalabawUnlocked ||
+          (gameState.level >= 20 &&
+            (gameState.coins >= 50000 || gameState.tiles.some((t) => t.animal?.type === 'carabao')))
+      );
+
+      if (!isKalabawUnlocked) {
+        sound.playTap();
+        setToastMessage({
+          id: `kalabaw_locked_${Date.now()}`,
+          text: `🐃 Kalabaw Locked!`,
+          subtext: `Requires Farm Level 20 and 50,000 Coins in the Farm Shop > Livestock section to adopt.`,
+        });
+        return;
+      }
+
+      const currentSoilCount = gameState.tiles.filter((t) => t.type === 'soil' || Boolean(t.crop)).length;
+      const maxSoilCount = gameState.level * 3;
+      const availableCapacity = maxSoilCount - currentSoilCount;
+
+      if (availableCapacity <= 0) {
+        sound.playTap();
+        setToastMessage({
+          id: `field_limit_${Date.now()}`,
+          text: `⚠️ Field Limit Reached (${currentSoilCount}/${maxSoilCount})!`,
+          subtext: `Farm Level ${gameState.level} allows up to ${maxSoilCount} fields (${gameState.level} × 3 stacked). Level up to unlock +3 more plots!`,
+        });
+        return;
+      }
+
+      // Kalabaw plow radius based on kalabawPlowLevel (Tier 1: 3 furrow, Tier 2: 5 furrow, Tier 3: 3x3 square)
+      const plowTier = gameState.kalabawPlowLevel || 1;
+      const targetCoords: Array<{ x: number; y: number }> = [];
+
+      if (plowTier === 3) {
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            targetCoords.push({ x: x + dx, y: y + dy });
+          }
+        }
+      } else if (plowTier === 2) {
+        targetCoords.push(
+          { x, y },
+          { x: x + 1, y },
+          { x: x + 2, y },
+          { x: x - 1, y },
+          { x: x - 2, y }
+        );
+      } else {
+        targetCoords.push(
+          { x, y },
+          { x: x + 1, y },
+          { x: x - 1, y }
+        );
+      }
+
+      sound.playPlow();
+      let newlyPlowed = 0;
       setGameState((prev) => ({
         ...prev,
         tiles: prev.tiles.map((t) => {
           const isTarget = targetCoords.some((c) => c.x === t.x && c.y === t.y);
-          if (isTarget && t.type === 'grass' && !t.structure && !t.animal) {
+          if (isTarget && t.type === 'grass' && !t.structure && !t.animal && newlyPlowed < availableCapacity) {
+            newlyPlowed++;
             return { ...t, type: 'soil' };
           }
           return t;
@@ -1006,12 +1078,51 @@ export default function App() {
     });
   }, []);
 
+  // Upgrading Kalabaw Plowing Radius
+  const handleUpgradeKalabawPlow = useCallback((nextTier: number, cost: number) => {
+    setGameState((prev) => {
+      if (prev.coins < cost) return prev;
+      sound.playLevelUp();
+      setToastMessage({
+        id: `kalabaw_upgrade_${Date.now()}`,
+        text: `🐃 Kalabaw Plow Upgraded to Tier ${nextTier}!`,
+        subtext: nextTier === 3 ? 'Supreme 3x3 square grid plow unlocked!' : 'Expanded furrow plow reach to 5 linear plots!',
+        rarity: 'legendary',
+      });
+      return {
+        ...prev,
+        coins: prev.coins - cost,
+        kalabawPlowLevel: nextTier,
+      };
+    });
+  }, []);
+
   // Buying Items / Livestock / Decor / Buildings
   const handleBuyItem = useCallback((itemId: string, itemName: string, cost: number, category: string) => {
     setGameState((prev) => {
       if (prev.coins < cost) return prev;
 
+      if (category === 'animal') {
+        const anType = itemId.replace('animal_', '');
+        if (anType === 'chicken') {
+          const chickenCount = prev.tiles.filter((t) => t.animal?.type === 'chicken').length;
+          const chickenLimit = Math.floor(prev.level / 3);
+          if (chickenLimit === 0 || chickenCount >= chickenLimit) return prev;
+        } else if (anType === 'cow') {
+          const cowCount = prev.tiles.filter((t) => t.animal?.type === 'cow').length;
+          const cowLimit = Math.floor(prev.level / 10);
+          if (cowLimit === 0 || cowCount >= cowLimit) return prev;
+        } else if (anType === 'sheep') {
+          const sheepCount = prev.tiles.filter((t) => t.animal?.type === 'sheep').length;
+          const sheepLimit = prev.level < 15 ? 0 : 1 + Math.floor((prev.level - 15) / 10);
+          if (sheepLimit === 0 || sheepCount >= sheepLimit) return prev;
+        } else if (anType === 'carabao') {
+          if (prev.level < 20 || prev.coins < 50000) return prev;
+        }
+      }
+
       let placed = false;
+      const isCarabao = itemId === 'animal_carabao';
       const newTiles = prev.tiles.map((tile) => {
         if (!placed && tile.type === 'grass' && !tile.crop && !tile.structure && !tile.animal && !tile.decor) {
           placed = true;
@@ -1062,6 +1173,7 @@ export default function App() {
         ...prev,
         coins: prev.coins - cost,
         tiles: newTiles,
+        kalabawUnlocked: isCarabao ? true : prev.kalabawUnlocked,
       };
     });
   }, []);
@@ -1447,28 +1559,16 @@ export default function App() {
 
     return (
       <div className="relative w-full h-full overflow-hidden select-none">
-        {/* Farm View: 3D Three.js Mode or 60fps 2D Isometric Canvas */}
-        {is3DMode ? (
-          <Farm3DCanvas
-            gameState={gameState}
-            onTileAction={handleTileAction}
-            onAnimalPet={handleAnimalPet}
-            onStructureClick={handleStructureClick}
-            movingTile={movingTile}
-            onPlaceMovedTile={handlePlaceMovedTile}
-            onCancelMove={() => setMovingTile(null)}
-          />
-        ) : (
-          <IsometricCanvas
-            gameState={gameState}
-            onTileAction={handleTileAction}
-            onAnimalPet={handleAnimalPet}
-            onStructureClick={handleStructureClick}
-            movingTile={movingTile}
-            onPlaceMovedTile={handlePlaceMovedTile}
-            onCancelMove={() => setMovingTile(null)}
-          />
-        )}
+        {/* Farm View: 60fps 2D Isometric Canvas (3D is reserved for Homestead House simulation) */}
+        <IsometricCanvas
+          gameState={gameState}
+          onTileAction={handleTileAction}
+          onAnimalPet={handleAnimalPet}
+          onStructureClick={handleStructureClick}
+          movingTile={movingTile}
+          onPlaceMovedTile={handlePlaceMovedTile}
+          onCancelMove={() => setMovingTile(null)}
+        />
 
         {/* Low-Occlusion HUD */}
         <HUD
@@ -1479,14 +1579,35 @@ export default function App() {
           onOpenInventory={() => setIsInventoryOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenHouseCustomizer={() => setIsHouseCustomizerOpen(true)}
-          onOpenAutomation={() => setIsAutomationOpen(true)}
-          onOpenCooking={() => setIsCookingOpen(true)}
+          onOpenAutomation={() => {
+            if (gameState.level < 5) {
+              sound.playTap();
+              setToastMessage({
+                id: `autotech_locked_${Date.now()}`,
+                text: `🔒 Auto Tech Locked!`,
+                subtext: `Unlocks at Farm Level 5. Keep harvesting and completing orders to reach Level 5!`,
+              });
+              return;
+            }
+            setIsAutomationOpen(true);
+          }}
+          onOpenCooking={() => {
+            if (gameState.level < 10) {
+              sound.playTap();
+              setToastMessage({
+                id: `kusina_locked_${Date.now()}`,
+                text: `🔒 Kusina Locked!`,
+                subtext: `Unlocks at Farm Level 10. Reach Level 10 to start cooking Filipino dishes!`,
+              });
+              return;
+            }
+            setIsCookingOpen(true);
+          }}
           onOpenLandExpansion={() => setIsLandExpansionOpen(true)}
+          onOpenLevelRoadmap={() => setLevelUnlockInfo(getLevelUnlockInfo(gameState.level))}
           onAdvanceDay={handleAdvanceDay}
           onToggleTimeOfDay={handleToggleTimeOfDay}
           onCycleWeather={handleCycleWeather}
-          is3DMode={is3DMode}
-          onToggle3DMode={() => setIs3DMode(!is3DMode)}
         />
 
         {/* Active Relocation Mode Banner */}
@@ -1577,6 +1698,7 @@ export default function App() {
           onBuyItem={handleBuyItem}
           onOpenHouseCustomizer={() => setIsHouseCustomizerOpen(true)}
           onOpenAutomation={() => setIsAutomationOpen(true)}
+          onUpgradeKalabawPlow={handleUpgradeKalabawPlow}
         />
       )}
 
@@ -1674,6 +1796,26 @@ export default function App() {
 
       {isInstallModalOpen && (
         <PWAInstallModal onClose={() => setIsInstallModalOpen(false)} />
+      )}
+
+      {levelUnlockInfo && (
+        <LevelUnlockModal
+          levelInfo={levelUnlockInfo}
+          currentLevel={levelUnlockInfo.level}
+          onClose={() => setLevelUnlockInfo(null)}
+          onOpenFeature={(feature) => {
+            setLevelUnlockInfo(null);
+            if (feature === 'kusina') {
+              if (gameState.level >= 10) setIsCookingOpen(true);
+            } else if (feature === 'autotech') {
+              if (gameState.level >= 5) setIsAutomationOpen(true);
+            } else if (feature === 'homestead') {
+              setIsHouseCustomizerOpen(true);
+            } else if (feature === 'shop') {
+              setIsShopOpen(true);
+            }
+          }}
+        />
       )}
     </div>
   );
