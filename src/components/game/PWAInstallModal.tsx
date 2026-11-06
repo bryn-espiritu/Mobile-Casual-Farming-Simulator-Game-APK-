@@ -73,6 +73,30 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ onClose }) => 
             <span>Direct Download APK (naga-farm.apk)</span>
           </a>
 
+          {/* GitHub Repository APK Mirror */}
+          <a
+            href="https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.apk"
+            download="naga-farm.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sound.playCoin()}
+            className="w-full py-2 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700/60 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <span>🐙</span>
+            <span>Download APK from GitHub (Commit 260603a)</span>
+          </a>
+
+          {/* Direct Compressed ZIP Download Button */}
+          <a
+            href="/naga-farm.zip"
+            download="naga-farm.zip"
+            onClick={() => sound.playCoin()}
+            className="w-full py-2 bg-emerald-950/50 hover:bg-emerald-900/50 text-emerald-200 text-xs font-semibold rounded-xl border border-emerald-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <span>🗜️</span>
+            <span>Download Compressed ZIP (naga-farm.zip)</span>
+          </a>
+
           {/* Install Status / WebAPK */}
           {isInstalled ? (
             <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-center text-emerald-300 font-medium">

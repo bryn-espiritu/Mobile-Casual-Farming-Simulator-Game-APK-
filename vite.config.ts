@@ -14,6 +14,9 @@ export default defineConfig(() => {
             if (req.url === '/naga-farm.apk') {
               res.setHeader('Content-Type', 'application/vnd.android.package-archive');
               res.setHeader('Content-Disposition', 'attachment; filename="naga-farm.apk"');
+            } else if (req.url === '/naga-farm.zip') {
+              res.setHeader('Content-Type', 'application/zip');
+              res.setHeader('Content-Disposition', 'attachment; filename="naga-farm.zip"');
             }
             next();
           });

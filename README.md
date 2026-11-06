@@ -3,51 +3,65 @@
 > **A relaxing, slow-paced Filipino agriculture & homestead simulation game.**  
 > **Created by Bryn Espiritu · Built primarily with Google AI**
 
-[![Creator](https://img.shields.io/badge/Creator-Bryn%20Espiritu-amber?style=for-the-badge&logo=person)](https://github.com)
+[![Creator](https://img.shields.io/badge/Creator-Bryn%20Espiritu-amber?style=for-the-badge&logo=person)](https://github.com/bryn-espiritu)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=for-the-badge&logo=github)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-)
+[![Commit](https://img.shields.io/badge/APK%20Commit-260603a-purple?style=for-the-badge&logo=git)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/commit/260603a21f3492c00a5c2eee31fef32ee7f49169)
+[![Download APK](https://img.shields.io/badge/Download-APK%20(Direct)-brightgreen?style=for-the-badge&logo=android)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.apk)
+[![Download ZIP](https://img.shields.io/badge/Download-ZIP%20Archive-orange?style=for-the-badge&logo=zip)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.zip)
 [![Powered By](https://img.shields.io/badge/Powered%20By-Google%20AI-emerald?style=for-the-badge&logo=google)](https://ai.google.dev)
-[![Direct APK Download](https://img.shields.io/badge/Download%20APK-Instant%20Direct%20Download-brightgreen?style=for-the-badge&logo=android)](./public/naga-farm.apk)
 
 ---
 
-## 📥 Direct APK Download (Automatic Download — No Redirection)
+## 📥 Direct Downloads (Immediate File Download — No Redirection)
 
-Click the link below to **automatically download the Android APK file (`naga-farm.apk`) directly to your device**. This initiates an immediate file download and will **not** redirect you to any external website or third-party store:
+Choose your preferred format below to **automatically download the file directly to your device**. Neither link redirects to any third-party ad network or external survey site:
 
-### 👉 [⬇️ CLICK HERE TO DIRECTLY DOWNLOAD NAGA FARM APK (naga-farm.apk)](./public/naga-farm.apk)
-
-*Live Hosted Direct Download Link:*  
-🔗 **[https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk](https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk)**
-
----
-
-### 💻 One-Line Terminal / Command Prompt Download
-Download the APK file directly to your computer or Android terminal with `curl` or `wget`:
+### 1️⃣ Download Compressed ZIP Archive (`naga-farm.zip`)
+Ideal if you prefer downloading a compressed archive containing the APK:
+- 👉 **[⬇️ CLICK HERE TO DOWNLOAD `naga-farm.zip` (From GitHub)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.zip)**
+- 📦 *Local / Live Server Mirror:* **[Download `naga-farm.zip`](./public/naga-farm.zip)**  
+  *(URL: `https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.zip`)*
 
 ```bash
-# Using curl (automatically downloads naga-farm.apk)
-curl -O https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk
-
-# Or using wget
-wget https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk
+# Terminal download command for naga-farm.zip
+curl -L -O https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.zip
 ```
 
 ---
 
-### 📲 How to Install the Downloaded APK on Android
-1. **Download the APK**: Click the download link above or use the **"📥 Download APK"** button on the in-game Title Screen / Settings modal.
-2. **Open the downloaded file**: On your Android device, open your **Downloads** folder or notification shade and tap **`naga-farm.apk`**.
-3. **Allow Installation**: If prompted, enable *"Install unknown apps"* for your browser or file manager.
-4. **Tap Install**: The app installs directly into your Android app drawer with full standalone offline support, hardware acceleration, and 60 FPS performance!
+### 2️⃣ Download Direct APK File (`naga-farm.apk`)
+Ready to install directly onto your Android device:
+- 👉 **[⬇️ CLICK HERE TO DOWNLOAD `naga-farm.apk` (From GitHub)](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.apk)**
+- 📦 *Local / Live Server Mirror:* **[Download `naga-farm.apk`](./public/naga-farm.apk)**  
+  *(URL: `https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk`)*
+
+```bash
+# Terminal download command for naga-farm.apk
+curl -L -O https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/raw/main/naga-farm.apk
+```
 
 ---
 
-### 🔨 Rebuild / Package the APK Locally
-You can regenerate or build the APK file locally from source anytime:
+### 📲 How to Install on Android
 
-```bash
-# Automatically builds public/naga-farm.apk
-npm run build:apk
-```
+#### From the `.apk` file:
+1. Tap the download link above or use the in-game **"📥 Download APK"** button on the Title Screen.
+2. When the download completes, tap **`naga-farm.apk`** from your notification tray or **Downloads** folder.
+3. If prompted, toggle on *"Allow from this source"* in your device settings.
+4. Tap **Install** to launch and play with full offline support and 60 FPS performance!
+
+#### From the `.zip` file:
+1. Tap the **`naga-farm.zip`** download link above.
+2. In your device's file manager, tap **Extract** or **Unzip** on `naga-farm.zip`.
+3. Open the extracted folder and tap **`naga-farm.apk`** to install.
+
+---
+
+### 🔗 Official Repository & Commit Reference
+- **GitHub Repository**: [bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-)
+- **APK Commit**: [`260603a21f3492c00a5c2eee31fef32ee7f49169`](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/commit/260603a21f3492c00a5c2eee31fef32ee7f49169)
+- **Direct Raw APK Endpoint**: `https://raw.githubusercontent.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/main/naga-farm.apk`
+- **Direct Raw ZIP Endpoint**: `https://raw.githubusercontent.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/main/naga-farm.zip`
 
 ---
 
@@ -100,6 +114,8 @@ npm run build:apk
 | :--- | :--- |
 | **Game Creator** | **Bryn Espiritu** |
 | **Primary Tool Used** | **Google AI** (Google AI Studio Build & Gemini API) |
+| **Official Repository** | [Mobile-Casual-Farming-Simulator-Game-APK-](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-) |
+| **APK Commit** | [`260603a`](https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game-APK-/commit/260603a21f3492c00a5c2eee31fef32ee7f49169) |
 | **Frameworks** | React 19, TypeScript, Vite, Tailwind CSS, Three.js, Canvas 2D |
 | **Audio Engine** | Web Audio API (Synthesized acoustic instruments, ambient wildlife, sizzling sounds) |
 | **Theme** | Philippine Agricultural Heritage (Bicolandia / Naga Farmstead) |
