@@ -176,10 +176,23 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         <div className="mt-4 text-xs text-slate-300 font-mono tracking-wide">
           Drag to Pan · Pinch / Scroll to Zoom · Tap to Tend
         </div>
+
+        {/* Creator & Tool Attribution Badge */}
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-[11px] text-slate-300 backdrop-blur-md shadow-lg">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span>🌾 Creator:</span>
+            <span className="text-amber-300 font-bold">Bryn Espiritu</span>
+          </span>
+          <span className="text-slate-600">|</span>
+          <span className="flex items-center gap-1.5 font-medium">
+            <span>🤖 Tool:</span>
+            <span className="text-emerald-300 font-bold">Google AI</span>
+          </span>
+        </div>
       </div>
 
       {/* Bottom info bar */}
-      <div className="relative z-10 w-full max-w-3xl px-6 pb-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+      <div className="relative z-10 w-full max-w-4xl px-6 pb-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
         <div className="flex items-center gap-2">
           <span className="text-emerald-400 font-semibold">{gameState.farmName}</span>
           <span>·</span>
@@ -188,10 +201,10 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span className="capitalize">{gameState.season} Day {gameState.seasonDay}</span>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px]">
-          <span>Full Offline Support</span>
+        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+          <span>Game by <strong className="text-slate-200">Bryn Espiritu</strong></span>
           <span>·</span>
-          <span>Touch & Mouse Friendly</span>
+          <span>Powered by <strong className="text-emerald-300">Google AI</strong></span>
           <span>·</span>
           <span>Auto-Saved</span>
         </div>

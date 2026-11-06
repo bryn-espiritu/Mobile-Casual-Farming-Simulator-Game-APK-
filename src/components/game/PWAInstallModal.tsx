@@ -44,20 +44,20 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ onClose }) => 
           <div className="flex items-center gap-3.5 p-3.5 bg-slate-800/60 rounded-2xl border border-slate-700/50">
             <img
               src={appIcon}
-              alt="Meadowbrook Farm Icon"
+              alt="Naga Farm Icon"
               className="w-14 h-14 rounded-2xl shadow-md border border-white/20 shrink-0"
             />
             <div>
-              <h3 className="text-sm font-bold text-white">Meadowbrook Farm</h3>
+              <h3 className="text-sm font-bold text-white">Naga Farm: Bicolandia Homestead</h3>
               <p className="text-slate-300 text-[11px] mt-0.5">
-                Version 1.0 · Standalone Offline Farm Sim
+                Creator: <strong className="text-amber-300">Bryn Espiritu</strong> · Powered by <strong className="text-emerald-300">Google AI</strong>
               </p>
-              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-emerald-400">
-                <span>✓ Touch Gestures</span>
+              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-emerald-400 font-mono">
+                <span>✓ Standalone WebAPK</span>
                 <span>·</span>
                 <span>✓ 60 FPS</span>
                 <span>·</span>
-                <span>✓ Auto-Save</span>
+                <span>✓ Offline Ready</span>
               </div>
             </div>
           </div>
@@ -65,7 +65,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ onClose }) => 
           {/* Install Status */}
           {isInstalled ? (
             <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-center text-emerald-300 font-medium">
-              🎉 Meadowbrook is already installed and running in standalone mode!
+              🎉 Naga Farm is already installed and running in standalone APK mode!
             </div>
           ) : isInstallable ? (
             <button

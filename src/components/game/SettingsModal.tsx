@@ -166,6 +166,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
+          {/* Game Credits Card */}
+          <div className="p-3.5 bg-gradient-to-br from-slate-950 to-slate-900 rounded-2xl border border-amber-500/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🌾</span>
+                <span>Credits & Attribution</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                Naga Farm
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block font-medium">Game Creator</span>
+                <span className="text-xs font-bold text-white mt-0.5 block">Bryn Espiritu</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block font-medium">Primary Tool Used</span>
+                <span className="text-xs font-bold text-emerald-300 mt-0.5 block">Google AI</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed pt-1">
+              Developed as a Philippine agricultural simulation honoring Bicolandia heritage, water buffalo plowing traditions, authentic cooking, and architectural homestead crafts.
+            </p>
+          </div>
+
           {/* Actions: Return to Title & Reset */}
           <div className="pt-2 space-y-2">
             <button
