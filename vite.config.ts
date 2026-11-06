@@ -29,9 +29,9 @@ export default defineConfig(() => {
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
           id: '/',
-          name: 'Meadowbrook Farm',
-          short_name: 'Meadowbrook',
-          description: 'A relaxing slow-paced isometric mobile farming simulation with interactive touch controls, customizable homestead, cozy seasonal tasks, and animal care.',
+          name: 'Naga Farm: Bicolandia Homestead',
+          short_name: 'Naga Farm',
+          description: 'A relaxing slow-paced Filipino agriculture and homestead simulation created by Bryn Espiritu using Google AI. Plow with water buffalo, cook in the Kusina, and build your dream hacienda.',
           theme_color: '#2e7d32',
           background_color: '#18231c',
           display: 'standalone',

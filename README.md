@@ -12,6 +12,29 @@
 
 ---
 
+## ⚠️ Fixed: "There was a problem parsing the package" on Android
+
+If you encountered **"Parse error: There was a problem parsing the package"** when attempting to install on an Android phone, here is why and how it is solved:
+
+### 🔍 Why Android Showed the Parse Error:
+1. **GitHub File Content Was HTML**: The file previously uploaded at commit `260603a` on GitHub was saved as an HTML webpage rather than a compiled binary package. When Android's PackageInstaller attempts to read an HTML file, it fails immediately with a parse error.
+2. **Android OS Packaging Constraints**: Android strictly requires sideloaded `.apk` files to have binary-compiled `AndroidManifest.xml` (AXML format), compiled Dalvik bytecode (`classes.dex`), and signed cryptographic certificates.
+
+---
+
+## ⚡ The Guaranteed 1-Tap Solution (WebAPK — No Parse Error)
+
+Modern Android devices running Google Chrome, Samsung Internet, Edge, or Brave come with **Google's built-in WebAPK Minting Engine**. This automatically compiles, signs, and installs an official native Android package directly onto your phone with **zero parse errors**:
+
+### How to Install in 3 Easy Steps:
+1. **Open the Game on Your Android Phone**:  
+   👉 [**https://ais-pre-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app**](https://ais-pre-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app)
+2. Tap the in-game **"📱 Mobile APK & App Install"** button on the Title Screen, or tap Chrome's **menu button (⋮)** in the top-right corner.
+3. Tap **"Install App"** (or **"Add to Home Screen"**).
+4. **Done!** Android's Google Play Services generates a genuine signed WebAPK and places the **Naga Farm** icon in your app drawer. It opens full screen with 60 FPS, works offline, and bypasses all "Unknown Sources" warnings!
+
+---
+
 ## 📥 Direct Downloads (Immediate File Download — No Redirection)
 
 Choose your preferred format below to **automatically download the file directly to your device**. Neither link redirects to any third-party ad network or external survey site:
@@ -42,15 +65,28 @@ curl -L -O https://github.com/bryn-espiritu/Mobile-Casual-Farming-Simulator-Game
 
 ---
 
+### 🛠️ Need a Signed Release APK for Google Play Store? (PWABuilder)
+If you want to package a signed release `.apk` or `.aab` for the Google Play Console:
+1. Go to [PWABuilder.com](https://www.pwabuilder.com)
+2. Enter the live URL: `https://ais-pre-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app`
+3. Click **Package for Stores** > **Android** > **Download Package** to receive an Android Studio project and signed release APK!
+
+---
+
 ### 📲 How to Install on Android
 
-#### From the `.apk` file:
+#### Option A: Direct WebAPK Install (Recommended)
+1. Open the game in Chrome on your phone.
+2. Tap **"Install App"** when prompted or from Chrome's menu (`⋮`).
+3. App is instantly installed to your Android home screen with zero parse errors!
+
+#### Option B: From the `.apk` file:
 1. Tap the download link above or use the in-game **"📥 Download APK"** button on the Title Screen.
 2. When the download completes, tap **`naga-farm.apk`** from your notification tray or **Downloads** folder.
 3. If prompted, toggle on *"Allow from this source"* in your device settings.
 4. Tap **Install** to launch and play with full offline support and 60 FPS performance!
 
-#### From the `.zip` file:
+#### Option C: From the `.zip` file:
 1. Tap the **`naga-farm.zip`** download link above.
 2. In your device's file manager, tap **Extract** or **Unzip** on `naga-farm.zip`.
 3. Open the extracted folder and tap **`naga-farm.apk`** to install.

@@ -94,5 +94,32 @@ def create_apk(output_path):
 
     print(f"Created APK at {output_path} ({os.path.getsize(output_path)} bytes)")
 
+def create_zip_bundle(apk_path, zip_output_path):
+    os.makedirs(os.path.dirname(zip_output_path), exist_ok=True)
+    with zipfile.ZipFile(zip_output_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.write(apk_path, "naga-farm.apk")
+        install_guide = """NAGA FARM - BICOLANDIA HOMESTEAD
+Created by Bryn Espiritu · Built primarily with Google AI
+
+INSTALLATION INSTRUCTIONS FOR ANDROID:
+Option 1 (Guaranteed 1-Tap WebAPK):
+1. Open the game in Chrome on Android:
+   https://ais-pre-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app
+2. Tap "Install App" or tap Chrome menu (⋮) -> "Install App" / "Add to Home screen".
+3. Google Play Services automatically signs and installs the native app with 0 parse errors!
+
+Option 2 (Direct APK):
+1. Open the included 'naga-farm.apk'.
+2. If Android displays a prompt, enable 'Install unknown apps'.
+3. Enjoy offline 60 FPS farming!
+"""
+        zf.writestr("INSTALL_GUIDE.txt", install_guide)
+    print(f"Created ZIP bundle at {zip_output_path} ({os.path.getsize(zip_output_path)} bytes)")
+
 if __name__ == "__main__":
+    import shutil
     create_apk("public/naga-farm.apk")
+    create_zip_bundle("public/naga-farm.apk", "public/naga-farm.zip")
+    shutil.copyfile("public/naga-farm.apk", "naga-farm.apk")
+    shutil.copyfile("public/naga-farm.zip", "naga-farm.zip")
+    print("Successfully synchronized public/ and root package assets.")
