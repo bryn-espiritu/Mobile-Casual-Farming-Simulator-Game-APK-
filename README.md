@@ -5,92 +5,81 @@
 
 [![Creator](https://img.shields.io/badge/Creator-Bryn%20Espiritu-amber?style=for-the-badge&logo=person)](https://github.com)
 [![Powered By](https://img.shields.io/badge/Powered%20By-Google%20AI-emerald?style=for-the-badge&logo=google)](https://ai.google.dev)
-[![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Android%20APK%20%7C%20PWA-blue?style=for-the-badge&logo=android)](https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app)
-[![Offline](https://img.shields.io/badge/Offline-Full%20Support-success?style=for-the-badge)](https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app)
+[![Direct APK Download](https://img.shields.io/badge/Download%20APK-Instant%20Direct%20Download-brightgreen?style=for-the-badge&logo=android)](./public/naga-farm.apk)
 
 ---
 
-## 📱 Download & Install the Android APK
+## 📥 Direct APK Download (Automatic Download — No Redirection)
 
-You can install and run **Naga Farm** directly on Android as a standalone native app (APK) without requiring third-party app stores:
+Click the link below to **automatically download the Android APK file (`naga-farm.apk`) directly to your device**. This initiates an immediate file download and will **not** redirect you to any external website or third-party store:
 
-### 🚀 Option 1: Instant Android WebAPK Direct Install (Recommended)
-1. Open the game in Chrome on your Android smartphone or tablet:  
-   👉 **[Launch Naga Farm App](https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app)**  
-   *(Alternative preview link: [Shared Live App](https://ais-pre-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app))*
-2. Tap the green **"Install Mobile APK"** button on the Title Screen or in Settings.  
-   *(Or tap Chrome's menu **⋮** and select **"Install app"** or **"Add to Home screen"**).*
-3. Android's package manager will automatically compile and install the verified **WebAPK** onto your device.
-4. Launch **Naga Farm** from your Android home screen or app drawer with native fullscreen, offline cache, and 60 FPS performance!
+### 👉 [⬇️ CLICK HERE TO DIRECTLY DOWNLOAD NAGA FARM APK (naga-farm.apk)](./public/naga-farm.apk)
+
+*Live Hosted Direct Download Link:*  
+🔗 **[https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk](https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk)**
 
 ---
 
-### 📦 Option 2: Package into a Standalone `.apk` file (Bubblewrap / TWA)
-If you want to build and sign a standalone `.apk` package to distribute or side-load via ADB:
+### 💻 One-Line Terminal / Command Prompt Download
+Download the APK file directly to your computer or Android terminal with `curl` or `wget`:
 
 ```bash
-# 1. Install Google's official Bubblewrap CLI
-npm install -g @bubblewrap/cli
+# Using curl (automatically downloads naga-farm.apk)
+curl -O https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk
 
-# 2. Initialize project from the live Web App Manifest
-bubblewrap init --manifest=https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/manifest.webmanifest
-
-# 3. Build your signed Android APK
-bubblewrap build
-
-# 4. Install the generated APK on your connected Android device
-adb install app-release-signed.apk
+# Or using wget
+wget https://ais-dev-x5aghzc66eeyacckwafgbn-507788884124.asia-northeast1.run.app/naga-farm.apk
 ```
 
 ---
 
-### ⚡ Option 3: Build Native Android APK with Capacitor
-You can also compile a native Android Studio project directly from this codebase:
+### 📲 How to Install the Downloaded APK on Android
+1. **Download the APK**: Click the download link above or use the **"📥 Download APK"** button on the in-game Title Screen / Settings modal.
+2. **Open the downloaded file**: On your Android device, open your **Downloads** folder or notification shade and tap **`naga-farm.apk`**.
+3. **Allow Installation**: If prompted, enable *"Install unknown apps"* for your browser or file manager.
+4. **Tap Install**: The app installs directly into your Android app drawer with full standalone offline support, hardware acceleration, and 60 FPS performance!
+
+---
+
+### 🔨 Rebuild / Package the APK Locally
+You can regenerate or build the APK file locally from source anytime:
 
 ```bash
-# 1. Build web distribution
-npm run build
-
-# 2. Add Android platform via Capacitor
-npx cap add android
-
-# 3. Sync code and assets
-npx cap copy android
-
-# 4. Open in Android Studio to build APK or AAB
-npx cap open android
+# Automatically builds public/naga-farm.apk
+npm run build:apk
 ```
 
 ---
 
-## 🌟 Game Highlights & Filipino Heritage
+## 🌟 Game Highlights & Filipino Agricultural Heritage
 
-### 🐃 Kalabaw (Water Buffalo) & Upgradable Plowing
-- **Unlock Requirement**: Reach Farm **Level 20** and collect **50,000 Coins** to adopt your loyal Kalabaw.
-- **Plowing Radius Upgrades**:
-  - **Tier 1 (Loyal Furrow Plow)**: Simultaneously cultivates **3 linear furrow plots**.
-  - **Tier 2 (Reinforced Bronze Harness)**: Expands plowing reach to **5 linear furrow plots** (Available at Lv 25).
-  - **Tier 3 (Golden Master Yoke)**: Cultivates a massive **3×3 square grid (9 plots)** in a single charge! (Available at Lv 30).
+### 🐃 Kalabaw (Water Buffalo) & Upgradable Furrow Plowing
+- **Unlock Requirement**: Reach Farm **Level 20** and collect **50,000 Coins** to adopt your hardworking Philippine Kalabaw in the Farm Shop.
+- **Upgradable Plowing Radius**:
+  - **Tier 1 (Loyal Furrow Plow)**: Simultaneously plows **3 linear furrow plots** in one swift motion.
+  - **Tier 2 (Reinforced Bronze Harness)**: Expands furrow reach to **5 linear plots** (Unlocked at Lv 25).
+  - **Tier 3 (Golden Master Yoke)**: Supreme **3×3 square grid furrow (9 plots)** cultivated in a single charge! (Unlocked at Lv 30).
 
-### 🌱 Stacked Level Plowing Allowance
-- **Field Limit Rule**: Plowing capacity is limited to **3 fields per level, stacked** (`maxFields = Level × 3`).
+### 🌱 Stacked Level Field Limit
+- **Plowing Capacity**: Limited to **3 fields per level, stacked** (`maxFields = Level × 3`).
 - Track your real-time field count directly in the top HUD (`🌱 Fields: {current}/{max}`).
+- Prevents over-plowing and rewards leveling up with +3 stacked field plots per level.
 
-### 🐔 Livestock Level Limits
-- **Heritage Chickens**: Unlocked at Level 3, with **+1 additional capacity every 3rd level** (Level 3, 6, 9, 12...).
-- **Jersey Dairy Cows**: Unlocked at Level 10, with **+1 additional capacity every 10th level** (Level 10, 20, 30...).
-- **Merino Sheep**: Unlocked at Level 15, with **+1 additional capacity every 5th tier** (Level 15, 25, 35...).
+### 🐔 Livestock Level Progression Limits
+- **Heritage Chickens**: Unlocks at Level 3, with **+1 additional capacity every 3rd level** (Level 3, 6, 9, 12...).
+- **Jersey Dairy Cows**: Unlocks at Level 10, with **+1 additional capacity every 10th level** (Level 10, 20, 30...).
+- **Merino Sheep**: Unlocks at Level 15, with **+1 additional capacity every 5th tier** (Level 15, 25, 35...).
 
 ### 🍳 Kusina (Filipino Cookhouse Simulator)
 - Unlocked at **Level 10**.
-- Cook traditional dishes using your homegrown crops and aquaculture harvests:
-  - **Sinigang sa Bayabas** (Sour guava broth with fresh tilapia)
+- Cook authentic Filipino dishes using crops and fish harvested from your farm:
+  - **Sinigang sa Bayabas** (Sour guava broth with fresh river tilapia)
   - **Bicol Express Fiesta Platter** (Spicy coconut chili stew)
   - **Inihaw na Tilapia & Rice**
-  - **Ube Halaya Jam** (Slow-stirred purple yam jam)
+  - **Ube Halaya Jam** (Slow-stirred sweet purple yam jam)
   - **Carabao Mango Float**
 - Features a **4-second interactive cooking simulation** with live sizzling audio, steaming kawali animations, and an interactive **🥄 Stir Kawali** button.
-- Consuming dishes grants powerful buffs (Double Harvest, +50% XP, +35% Crop Growth Speed).
+- Eating prepared dishes activates powerful timed buffs (Double Harvest, +50% XP, +35% Crop Growth Speed).
 
 ### 🏡 3D Homestead Studio & Architecture Upgrades
 - Step inside your **Bahay Kubo** to access the 3D room customizer.
@@ -126,10 +115,13 @@ npm install
 # 2. Run local development server
 npm run dev
 
-# 3. Run type check and linter
+# 3. Build APK
+npm run build:apk
+
+# 4. Run type check and linter
 npm run lint
 
-# 4. Build production bundle
+# 5. Build production web bundle
 npm run build
 ```
 

@@ -7,6 +7,18 @@ import {VitePWA} from 'vite-plugin-pwa';
 export default defineConfig(() => {
   return {
     plugins: [
+      {
+        name: 'apk-downloader-headers',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (req.url === '/naga-farm.apk') {
+              res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+              res.setHeader('Content-Disposition', 'attachment; filename="naga-farm.apk"');
+            }
+            next();
+          });
+        },
+      },
       react(),
       tailwindcss(),
       VitePWA({

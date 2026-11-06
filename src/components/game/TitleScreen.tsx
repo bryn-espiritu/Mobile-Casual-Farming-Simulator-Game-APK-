@@ -63,21 +63,33 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Direct APK File Download Button */}
+          <a
+            href="/naga-farm.apk"
+            download="naga-farm.apk"
+            onClick={() => sound.playCoin()}
+            className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-lg shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download naga-farm.apk directly"
+          >
+            <span>📥</span>
+            <span>Download APK</span>
+          </a>
+
           {isInstallable && (
             <button
               onClick={install}
-              className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Install Mobile APK
+              WebAPK
             </button>
           )}
 
           <button
             onClick={onOpenInstallModal}
-            className="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-black/40 hover:bg-black/60 rounded-lg border border-white/10 transition-colors"
+            className="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-black/40 hover:bg-black/60 rounded-lg border border-white/10 transition-colors cursor-pointer"
           >
             APK Info
           </button>

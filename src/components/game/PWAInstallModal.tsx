@@ -62,7 +62,18 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ onClose }) => 
             </div>
           </div>
 
-          {/* Install Status */}
+          {/* Direct APK File Download Button (Immediate file download, no redirection) */}
+          <a
+            href="/naga-farm.apk"
+            download="naga-farm.apk"
+            onClick={() => sound.playCoin()}
+            className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-bold text-sm rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer border-2 border-amber-300 active:scale-95"
+          >
+            <span className="text-base">📥</span>
+            <span>Direct Download APK (naga-farm.apk)</span>
+          </a>
+
+          {/* Install Status / WebAPK */}
           {isInstalled ? (
             <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-center text-emerald-300 font-medium">
               🎉 Naga Farm is already installed and running in standalone APK mode!
@@ -70,12 +81,12 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ onClose }) => 
           ) : isInstallable ? (
             <button
               onClick={handleInstallClick}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Install to Home Screen Now
+              Install as WebAPK onto Home Screen
             </button>
           ) : isIOS ? (
             <div className="p-3.5 bg-slate-800/70 border border-slate-700 rounded-xl space-y-2">
